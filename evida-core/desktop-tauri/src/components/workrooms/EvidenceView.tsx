@@ -1,4 +1,4 @@
-import type { SourceObjectSummary } from "../../types";
+﻿import type { SourceObjectSummary } from "../../types";
 import { EmptyStateAction } from "../EmptyStateAction";
 import { SourceButtonList } from "./SourceButtonList";
 import type { EvidenceRow } from "./types";
@@ -24,7 +24,7 @@ export function EvidenceView({ rows, sourcesById, onBuild, onOpenSource, buildLa
       {rows.length === 0 ? (
         <EmptyStateAction
           title="Ingen bevismatrise bygget ennå."
-          description="Bevis viser p\u00e5standsobjekter, ikke en liste med r\u00e5 tekstutdrag."
+          description="Bevis viser påstandsobjekter, ikke en liste med rå tekstutdrag."
           actionLabel={buildLabel}
           onAction={onBuild}
         />

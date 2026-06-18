@@ -110,7 +110,7 @@ export async function getAppStatus(): Promise<string> {
   try {
     return await callTauri<string>("get_app_status");
   } catch {
-    return "Dev webmodus: Tauri ikke aktiv, bruker lokal browser-store.";
+    return "";
   }
 }
 
@@ -335,7 +335,7 @@ export async function registerDocument(
         chunk_id: id("CHK"),
         page_start: 1,
         page_end: 1,
-        text_excerpt: "Dev webmodus: kildeobjekt opprettet fra oppgitt filsti.",
+        text_excerpt: "",
         sha256: "dev-browser-placeholder",
         created_at: now()
       });
@@ -458,6 +458,38 @@ export async function registerDocumentInSession(
       created_at: now(),
       updated_at: now()
     };
+  }
+}
+
+export async function replaceDocumentFile(
+  caseId: string,
+  documentId: string,
+  path: string
+): Promise<DocumentIngestionReport> {
+  try {
+    return await callTauri<DocumentIngestionReport>("replace_document_file", { caseId, documentId, path });
+  } catch {
+    const report = await registerDocument(caseId, path);
+    const store = readStore();
+    const oldDocument = store.documents.find((document) => document.id === documentId && document.case_id === caseId);
+    store.documents = store.documents.filter((document) => document.id !== documentId);
+    store.sources = store.sources.filter((source) => source.document_id !== documentId);
+    appendAudit(store, {
+      case_id: caseId,
+      action: "document_replaced",
+      target_type: "document",
+      target_id: report.document.id
+    });
+    if (oldDocument) {
+      appendAudit(store, {
+        case_id: caseId,
+        action: "source_object_invalidated",
+        target_type: "document",
+        target_id: oldDocument.id
+      });
+    }
+    writeStore(store);
+    return report;
   }
 }
 

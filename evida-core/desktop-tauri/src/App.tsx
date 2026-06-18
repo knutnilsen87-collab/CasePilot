@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -39,6 +39,7 @@ import {
   recordDocumentControlAction,
   reindexCaseDocuments,
   registerDocumentInSession,
+  replaceDocumentFile,
   refreshEvidenceQuality,
   removeImportItemFromCase,
   renameCase,
@@ -130,7 +131,11 @@ import {
   summarizeImportProgress
 } from "./features/documents/importUx";
 import { deriveCasePreparationProgress } from "./features/casePreparation/casePreparation.logic";
-import { deriveDocumentControlBulkPlan } from "./features/documentControl/documentControl.logic";
+import {
+  DOCUMENT_REPLACE_DISABLED_REASON,
+  PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED,
+  deriveDocumentControlBulkPlan
+} from "./features/documentControl/documentControl.logic";
 import type { DocumentControlBulkActionId } from "./features/documentControl/documentControl.types";
 import {
   EXPORT_PRELIMINARY_ACKNOWLEDGEMENT,
@@ -263,6 +268,30 @@ function coverageLabel(percent: number, pagesWithSources: number) {
 function firstSentence(value: string) {
   const sentence = value.split(/[.!?]\s/)[0] || value;
   return sentence.length > 150 ? `${sentence.slice(0, 147)}...` : sentence;
+}
+
+const RAW_TECHNICAL_ERROR_PATTERNS = [
+  /\bno such (column|table|index)\b/i,
+  /\bcreate\s+(index|table)\b/i,
+  /\bselect\b.+\bfrom\b/i,
+  /\binsert\s+into\b/i,
+  /\b(update|delete)\b.+\bwhere\b/i,
+  /\b(create|select|insert|update|delete|alter|drop)\s+.+\b(table|index|from|into|where|column)\b/i,
+  /\bat offset \d+\b/i,
+  /\bstack trace\b/i,
+  /\bpanicked at\b/i,
+  /\brust backtrace\b/i,
+  /\bsqlite\b/i,
+  /\bsqlx\b/i
+];
+
+function isRawTechnicalError(value?: string | null) {
+  const normalized = value?.trim();
+  return Boolean(normalized && RAW_TECHNICAL_ERROR_PATTERNS.some((pattern) => pattern.test(normalized)));
+}
+
+function safeImportUserMessage(value?: string | null) {
+  return isRawTechnicalError(value) ? "Teknisk feil under import" : value?.trim() || "";
 }
 
 function extractDate(value: string) {
@@ -960,7 +989,7 @@ export default function App() {
   const importNextAction = useMemo(() => deriveNextAction(importOutcome), [importOutcome]);
   const importOutcomeGapMessages = useMemo(() => {
     const messages: string[] = [];
-    const controlCount = Math.max(importOutcome.manualReviewRequired, importOutcome.ocrRequired);
+    const controlCount = importOutcome.manualReviewRequired;
     if (controlCount > 0) {
       messages.push(
         `${controlCount} ${controlCount === 1 ? "dokument trenger" : "dokumenter trenger"} manuell kontroll før de kan brukes som kildegrunnlag.`
@@ -968,11 +997,11 @@ export default function App() {
     }
     if (importOutcome.notUsedAsSource > 0) {
       messages.push(
-        `${importOutcome.notUsedAsSource} ${importOutcome.notUsedAsSource === 1 ? "dokument ble" : "dokumenter ble"} ikke brukt som kildegrunnlag. Erstatt fil eller hold dem utenfor saken.`
+        `${importOutcome.notUsedAsSource} ${importOutcome.notUsedAsSource === 1 ? "dokument ble" : "dokumenter ble"} ikke brukt som kildegrunnlag. Hold dem utenfor saken til produksjonsklar erstatning eller OCR er verifisert.`
       );
     }
     return messages;
-  }, [importOutcome.manualReviewRequired, importOutcome.ocrRequired, importOutcome.notUsedAsSource]);
+  }, [importOutcome.manualReviewRequired, importOutcome.notUsedAsSource]);
   const casePreparationProgress = useMemo(
     () =>
       deriveCasePreparationProgress({
@@ -1037,7 +1066,7 @@ export default function App() {
     reindexCaseDocuments(selectedCaseId)
       .then((report) => {
         setReindexStatus(
-          `Kildegrunnlaget er oppdatert: ${report.sources_created} kildeutdrag fordelt p\u00e5 ${report.pages_created} sider.`
+          `Kildegrunnlaget er oppdatert: ${report.sources_created} kildeutdrag fordelt på ${report.pages_created} sider.`
         );
         return refresh(selectedCaseId);
       })
@@ -1544,26 +1573,23 @@ export default function App() {
   const importDocuments = useCallback(
     async (paths: string[]) => {
       const rawPaths = paths.map((path) => path.trim()).filter(Boolean);
-      const cleanPaths = await expandImportPaths(rawPaths);
-      if (cleanPaths.length === 0) {
-        if (rawPaths.length > 0) {
-          setImportError("Fant ingen støttede dokumenter i valget. Støttede filtyper er PDF, DOCX, TXT, MD, PNG, JPG og TIFF.");
-        }
+      if (rawPaths.length === 0) {
         return;
       }
 
       setImportError("");
       setIsImporting(true);
       setOnboardingStage("caseRoom");
-      setActiveView("caseRoom");
+      setActiveView("documents");
+      setShowImportQueueDetails(false);
       const importStartedAt = Date.now();
       setImportNow(importStartedAt);
       setImportQueue(
-        cleanPaths.map((path) => ({
+        rawPaths.map((path) => ({
           path,
           name: fileNameFromPath(path),
-          status: "queued",
-          detail: processingStageLabel("queued"),
+          status: "validating",
+          detail: "Finner dokumenter i valget",
           startedAt: importStartedAt,
           statusUpdatedAt: importStartedAt
         }))
@@ -1580,6 +1606,29 @@ export default function App() {
         "Registrerer dokumenter i lokal database"
       ]);
       try {
+        const cleanPaths = await expandImportPaths(rawPaths);
+        if (cleanPaths.length === 0) {
+          setImportError("Fant ingen støttede dokumenter i valget. Støttede filtyper er PDF, DOCX, TXT, MD, PNG, JPG og TIFF.");
+          setImportQueue((current) =>
+            current.map((item) => ({
+              ...item,
+              status: "unsupported",
+              detail: "Fant ingen støttede dokumenter i valget."
+            }))
+          );
+          return;
+        }
+        setImportQueue(
+          cleanPaths.map((path) => ({
+            path,
+            name: fileNameFromPath(path),
+            status: "queued",
+            detail: processingStageLabel("queued"),
+            startedAt: importStartedAt,
+            statusUpdatedAt: importStartedAt
+          }))
+        );
+
         let activeCaseId = selectedCaseId;
         if (!activeCaseId) {
           const created = await createCase(temporaryCaseTitle(), "NO");
@@ -1606,7 +1655,7 @@ export default function App() {
             sources_created: item.source_count,
             pages_with_text: item.pages_with_text,
             status: item.status,
-            user_message: item.user_message,
+            user_message: safeImportUserMessage(item.user_message) || "Teknisk feil under import",
             issue_code: item.issue_code,
             recommended_action: item.recommended_action,
             technical_message: item.technical_message,
@@ -1671,7 +1720,7 @@ export default function App() {
             : "Dokumentene må kontrolleres før analyse"
         ]);
         setOnboardingStage("caseRoom");
-        setActiveView("caseRoom");
+        setActiveView("documents");
         if (estimatedCoverage >= 80 && sourceCount > 0) {
           void runAutomaticAnalysis(activeCaseId, sourceCount, Math.min(estimatedCoverage, nextHealth.source_coverage_percent))
             .then(() => refresh(activeCaseId))
@@ -1680,12 +1729,13 @@ export default function App() {
             });
         }
       } catch (error) {
-        setImportError(`Import feilet: ${String(error)}`);
+        const safeError = safeImportUserMessage(String(error)) || "Teknisk feil under import";
+        setImportError(safeError);
         setImportQueue((current) =>
           current.map((item) =>
             ["completed", "failed", "partial", "ocr_required", "unsupported", "duplicate"].includes(item.status)
               ? item
-              : { ...item, status: "failed", detail: String(error) }
+              : { ...item, status: "failed", detail: safeError, technicalMessage: String(error) }
           )
         );
         setProcessingLog((current) => [...current, "Import feilet"]);
@@ -1909,7 +1959,7 @@ export default function App() {
       void importDocuments(paths);
       return;
     }
-    setImportError("Nettlesermodus kan ikke lese lokal filsti. \u00c5pne desktop-appen for lokal filimport, eller bruk den bygde Evida-appen.");
+    setImportError("Nettlesermodus kan ikke lese lokal filsti. Åpne desktop-appen for lokal filimport, eller bruk den bygde Evida-appen.");
   }
 
   function handleDrop(event: DragEvent<HTMLElement>) {
@@ -2058,7 +2108,11 @@ export default function App() {
         draftAvailability?.warning ? `Forbehold: ${draftAvailability.warning}` : "",
         "",
         "Foreløpig bevisgrunnlag:",
-        ...sources.slice(0, 6).map((source) => `- [${source.id}] side ${source.page_start}: ${firstSentence(source.text_excerpt)}`)
+        ...sources.slice(0, 6).map((source) => {
+          const doc = documents.find((d) => d.id === source.document_id);
+          const docName = doc?.original_name || "ukjent dokument";
+          return `- [${docName} side ${source.page_start}]: ${firstSentence(source.text_excerpt)}`;
+        })
       ].filter(Boolean).join("\n")
     );
   }
@@ -2124,7 +2178,7 @@ export default function App() {
           >
             <span>{index + 1}</span>
             <strong>{step.label}</strong>
-            <small>{step.done ? "Fullf\u00f8rt" : step.active ? "Neste steg" : "Venter"}</small>
+            <small>{step.done ? "Fullført" : step.active ? "Neste steg" : "Venter"}</small>
           </button>
         ))}
       </section>
@@ -2161,7 +2215,7 @@ export default function App() {
         label: "Bygg kronologi",
         done: timelineItems.length > 0,
         active: canUsePreliminaryAnalysis && timelineItems.length === 0,
-        reason: "F\u00f8rste nytte er en tidslinje med kildehenvisning.",
+        reason: "Første nytte er en tidslinje med kildehenvisning.",
         actionLabel: "Bygg kronologi",
         action: buildChronology
       },
@@ -2169,7 +2223,7 @@ export default function App() {
         label: "Bygg bevismatrise",
         done: evidenceRows.length > 0,
         active: timelineItems.length > 0 && evidenceRows.length === 0,
-        reason: "P\u00e5stander kobles til st\u00f8ttende og svekkende kildeutdrag.",
+        reason: "Påstander kobles til støttende og svekkende kildeutdrag.",
         actionLabel: "Bygg bevismatrise",
         action: buildEvidence
       },
@@ -2178,7 +2232,7 @@ export default function App() {
         done: canUseDraftControl,
         active: canUseDraftControl,
         reason: "Utkast åpnes først når dokumentgrunnlaget har høy dekning.",
-        actionLabel: "\u00c5pne utkast",
+        actionLabel: "Åpne utkast",
         action: () => setActiveView("draft")
       }
     ];
@@ -2188,10 +2242,10 @@ export default function App() {
       <section className="panel onboarding-panel">
         <div className="onboarding-hero">
           <div>
-            <div className="eyebrow">F\u00f8rste verdi</div>
+            <div className="eyebrow">Første verdi</div>
             <h2>{currentStep.label}</h2>
             <p>{currentStep.reason}</p>
-            <p className="trust-copy">AI foresl\u00e5r. Du godkjenner. Alt skal kunne spores til et kildeutdrag.</p>
+            <p className="trust-copy">AI foreslår. Du godkjenner. Alt skal kunne spores til et kildeutdrag.</p>
           </div>
           <button className="button-primary primary-action" onClick={currentStep.action}>
             {currentStep.actionLabel}
@@ -2203,16 +2257,16 @@ export default function App() {
               key={step.label}
               className={`onboarding-step ${step.done ? "onboarding-step--done" : ""} ${step.active ? "onboarding-step--active" : ""}`}
             >
-              <span>{step.done ? "\u2713" : index + 1}</span>
+              <span>{step.done ? "✓" : index + 1}</span>
               <div>
                 <strong>{step.label}</strong>
-                <small>{step.done ? "Fullf\u00f8rt" : step.active ? "Neste handling" : "Kommer senere"}</small>
+                <small>{step.done ? "Fullført" : step.active ? "Neste handling" : "Kommer senere"}</small>
               </div>
             </div>
           ))}
         </div>
         <button className="button-ghost secondary-link" onClick={() => setActiveView("documents")}>
-          \u00c5pne fullt arbeidsrom
+          Åpne fullt arbeidsrom
         </button>
       </section>
     );
@@ -2317,7 +2371,7 @@ export default function App() {
             onOpenAttentionItem={(item) => void handlePreviewDocumentById(item.documentId || item.id)}
           />
         ) : (
-          <p className="muted">Foreløpig — lav eller ufullstendig dekning. Kontroller alle svar mot kildene.</p>
+          <p className="muted">Foreløpig - lav eller ufullstendig dekning. Kontroller alle svar mot kildene.</p>
         )}
         {recoveryCount > 0 ? (
           <div className="warning-notice" role="alert">
@@ -2407,10 +2461,36 @@ export default function App() {
   }
 
   async function handleReplaceImportItem(item: ImportItem) {
+    if (!PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED) {
+      setMaintenanceStatus(DOCUMENT_REPLACE_DISABLED_REASON);
+      return;
+    }
+    const row = documentBasis.rows.find((candidate) => candidate.hash === item.sha256 || candidate.name === item.original_name);
+    if (row) {
+      await handleReplaceDocumentRow(row);
+      return;
+    }
+    setMaintenanceStatus("Fant ikke aktivt dokument å erstatte. Åpne dokumentkontroll og velg dokumentet direkte.");
+  }
+
+  async function handleReplaceDocumentRow(row: DocumentBasisRow) {
+    if (!PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED) {
+      setMaintenanceStatus(DOCUMENT_REPLACE_DISABLED_REASON);
+      return;
+    }
     const paths = await chooseDocumentPaths();
     if (paths.length > 0) {
-      await importDocuments(paths.slice(0, 1));
-      setMaintenanceStatus(`Erstatningsfil valgt for ${item.original_name}.`);
+      try {
+        const report = await replaceDocumentFile(row.caseId, row.id, paths[0]);
+        setMaintenanceStatus(`${row.name} er erstattet med ${report.document.original_name}. Gammel versjon er superseded og gamle kilder er invalidert.`);
+        setPreviewDocument(null);
+        setControlSelectionIds([]);
+        if (selectedCaseId) {
+          await refresh(selectedCaseId);
+        }
+      } catch (error) {
+        setMaintenanceStatus(`Erstatt fil feilet trygt: ${String(error)}`);
+      }
     }
   }
 
@@ -2641,12 +2721,16 @@ export default function App() {
     }
 
     if (action === "replace") {
+      if (!PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED) {
+        setApprovalToast(DOCUMENT_REPLACE_DISABLED_REASON);
+        return;
+      }
       await handleReplaceDocumentRow(rows[0]);
       return;
     }
 
     if (action === "run_ocr") {
-      setApprovalToast(`${rows.length} dokumenter er identifisert for OCR. Velg Erstatt fil hvis originalen ikke kan leses.`);
+      setApprovalToast(`${rows.length} dokumenter er identifisert for OCR. Hold dem utenfor kildegrunnlaget til sikker OCR er verifisert.`);
       setMaintenanceStatus(`${rows.length} valgte dokumenter trenger OCR eller tekstkontroll.`);
       return;
     }
@@ -2700,14 +2784,6 @@ export default function App() {
     const row = documentBasis.rows.find((item) => item.id === documentId);
     if (row) {
       await handleReplaceDocumentRow(row);
-    }
-  }
-
-  async function handleReplaceDocumentRow(row: DocumentBasisRow) {
-    const paths = await chooseDocumentPaths();
-    if (paths.length > 0) {
-      await importDocuments(paths.slice(0, 1));
-      setMaintenanceStatus(`Erstatningsfil valgt for ${row.name}.`);
     }
   }
 
@@ -2766,14 +2842,14 @@ export default function App() {
     if (item.status === "ocr_required") {
       return {
         impact: "Dokumentet mangler maskinlesbar tekst på én eller flere sider.",
-        nextStep: "Åpne dokumentkontroll, forhåndsvis originalen og erstatt filen hvis OCR/tekstgrunnlag mangler.",
+        nextStep: "Åpne dokumentkontroll og hold dokumentet utenfor kildegrunnlaget til sikker OCR eller versjonert erstatning er produksjonsklar.",
         safety: "Saksrom bruker bare eksisterende kildeutdrag og markerer resten som manglende grunnlag."
       };
     }
     if (item.status === "failed" || item.status === "unsupported") {
       return {
         impact: "Filen ble ikke gjort om til sporbare kilder.",
-        nextStep: item.can_retry ? "Prøv import på nytt, eller erstatt filen med en lesbar kopi." : "Erstatt filen, fjern den fra saken, eller hold den utenfor AI-grunnlaget.",
+        nextStep: item.can_retry ? "Prøv import på nytt, eller hold dokumentet utenfor kildegrunnlaget." : "Fjern filen fra saken, eller hold den utenfor AI-grunnlaget.",
         safety: "Dokumentet brukes ikke som kildegrunnlag før du gjør en ny kontrollhandling."
       };
     }
@@ -2798,15 +2874,31 @@ export default function App() {
     };
   }
 
+  function ReplacementDisabledNote({ compact = false }: { compact?: boolean }) {
+    if (PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED) {
+      return null;
+    }
+
+    return (
+      <p className={`replace-disabled-note ${compact ? "replace-disabled-note--compact" : ""}`} role="note">
+        <strong>Erstatt fil er blokkert for denne testutgaven.</strong>
+        <span>
+          {DOCUMENT_REPLACE_DISABLED_REASON} Dokumentet blir ikke gjort til kilde automatisk; bruk kontrollvalgene for trygg håndtering.
+        </span>
+      </p>
+    );
+  }
+
   function ImportItemCard({ item, technical = false }: { item: ImportItem; technical?: boolean }) {
     const recovery = importItemRecoveryCopy(item);
+    const visibleMessage = safeImportUserMessage(item.user_message) || recovery.impact;
     return (
       <article className={`import-health-item import-health-item--${item.status}`}>
         <div>
           <strong>{item.original_name}</strong>
           <span>{importStatusLabel(item.status)}</span>
         </div>
-        <p>{item.user_message || recovery.impact}</p>
+        <p>{visibleMessage}</p>
         <div className="recovery-callout" role={item.can_continue ? "note" : "alert"}>
           <strong>Trygg håndtering</strong>
           <span>{recovery.safety}</span>
@@ -2823,12 +2915,21 @@ export default function App() {
             <button className="button-secondary" type="button" onClick={() => void importDocuments([item.original_path])}>Prøv igjen</button>
           ) : null}
           <button className="button-secondary" type="button" onClick={() => void handleRemoveImportItem(item)}>Fjern fra saken</button>
-          <button className="button-secondary" type="button" onClick={() => void handleReplaceImportItem(item)}>Erstatt fil</button>
+          <button
+            className="button-secondary"
+            type="button"
+            disabled={!PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED}
+            title={DOCUMENT_REPLACE_DISABLED_REASON}
+            onClick={() => void handleReplaceImportItem(item)}
+          >
+            Erstatt fil
+          </button>
           <button className="button-secondary" type="button" onClick={() => void handleOpenOriginalFolder(item)}>Åpne originalmappe</button>
           <button className="button-secondary" type="button" onClick={() => setExpandedDocumentId(expandedDocumentId === item.id ? "" : item.id)}>
             Vis tekniske detaljer
           </button>
         </div>
+        <ReplacementDisabledNote compact />
         {technical || expandedDocumentId === item.id ? (
           <pre className="technical-details">{JSON.stringify(item, null, 2)}</pre>
         ) : null}
@@ -3365,42 +3466,79 @@ export default function App() {
           <h3>AI lager forslag. Du godkjenner.</h3>
           <p>Alle forslag skal kunne spores til kildeutdrag. Bruk dette som arbeidsutkast, ikke som juridisk fasit uten faglig vurdering.</p>
         </div>
-        <button className="button-secondary" onClick={() => setTrustContractHidden(true)}>Skj\u00f8nner</button>
+        <button className="button-secondary" onClick={() => setTrustContractHidden(true)}>Skjønner</button>
       </section>
     );
   }
 
   function ImportPanel() {
+    const importRunning = isImporting || importProgress.state === "processing";
+    const hasImportResult = !importRunning && (hasDocuments || importQueue.length > 0 || Boolean(lastImport));
+    const needsReview =
+      importOutcome.manualReviewRequired > 0 ||
+      importOutcome.ocrRequired > 0 ||
+      importOutcome.failed > 0 ||
+      importOutcome.notUsedAsSource > 0 ||
+      importNextAction.id === "control_documents" ||
+      importNextAction.id === "review_import_failure";
+    const canOpenSaksrom = Boolean(roomAvailabilityByView.caseRoom?.enabled);
+    const readyForSourcesCount = Math.max(importOutcome.readyForSaksrom, documentBasis.readyCount, 0);
+    const totalImportedCount = Math.max(
+      importOutcome.totalSelected,
+      importOutcome.processed,
+      importProgress.totalDocuments,
+      documents.length
+    );
+    const needsControlCount = Math.max(
+      importOutcome.manualReviewRequired + importOutcome.notUsedAsSource + importOutcome.failed,
+      totalImportedCount - readyForSourcesCount,
+      0
+    );
+    const ocrLabel = !hasDocuments ? "Tekst venter" : pendingOcrPages > 0 ? "Tekstkontroll trengs" : "Tekst klar";
+    const importResultTitle = importOutcome.failed > 0 ? "Noen dokumenter kunne ikke leses" : "Import fullført";
+    const importResultBody =
+      totalImportedCount > 0 && needsControlCount > 0
+        ? `${readyForSourcesCount} av ${totalImportedCount} dokumenter kan brukes som kilder. ${needsControlCount} dokument${needsControlCount === 1 ? "" : "er"} trenger kontroll før trygg analyse.`
+        : totalImportedCount > 0
+          ? "Alle dokumenter er klare for Saksrom."
+          : "Dokumentene er importert.";
+    const importResultNote =
+      needsControlCount > 0
+        ? "Du kan åpne Saksrom nå, men analysen blir tryggere etter kontroll."
+        : "Du kan åpne Saksrom nå.";
+    const importCardTitle = importRunning ? "Importerer dokumenter" : importProgress.title;
+    const importStatusMessage = importRunning
+      ? activeImportItem
+        ? `Nå: ${activeImportItem.name}`
+        : "Finner dokumenter og klargjør import."
+      : undefined;
+
     return (
       <section
-        className={`panel import-panel ${isDragActive ? "import-panel--active" : ""}`}
+        className={`document-import-screen import-panel ${isDragActive ? "import-panel--active" : ""}`}
         onDrop={handleDrop}
         onDragEnter={() => setIsDragActive(true)}
         onDragLeave={() => setIsDragActive(false)}
         onDragOver={handleDragOver}
       >
-        <div className="panel-header">
+        <div className="document-import-status-strip" role="status" aria-label="Saks- og importstatus">
+          <span>Lokal modus aktiv</span>
+          <span>Pre-alpha: testdata only</span>
+          <span>{countLabel(documents.length, "dokument", "dokumenter")}</span>
+          <span>{totalPages > 0 ? `${totalPages} sider` : "Sider beregnes"}</span>
+          <span>{readyForSourcesCount} kan brukes som kilder</span>
+          <span>{ocrLabel}</span>
+        </div>
+
+        <div className="document-import-workspace">
           <div>
             <h2>Dokumentimport</h2>
-            <p>Velg flere filer, velg en hel saksmappe, eller dra dokumenter inn. Sporbare kildeutdrag er tekst vi kan vise tilbake til originaldokumentet.</p>
+            <p>Velg filer eller en hel saksmappe. Evida behandler dokumentene lokalt og lager sporbare kildeutdrag.</p>
           </div>
-        </div>
         {!hasDocuments && !privacyNoticeDismissed ? (
           <PrivacyPreAlphaNotice onDismiss={() => setPrivacyNoticeDismissed(true)} />
         ) : null}
-        <div className="import-helper">
-          <strong>St\u00f8ttede filtyper:</strong> PDF, DOCX, TXT, MD, PNG, JPG og TIFF.
-          {!hasDesktopRuntime() ? " Lokal filimport krever desktop-appen." : ""}
-        </div>
-        <div className="form-row">
-          <select value={selectedCaseId} onChange={(event) => void handleSelectCase(event.target.value)}>
-            <option value="">Velg sak</option>
-            {cases.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name}
-              </option>
-            ))}
-          </select>
+        <div className="document-import-actions">
           <button className="button-primary" disabled={isImporting} onClick={handleChooseFiles}>
             Velg filer
           </button>
@@ -3419,8 +3557,12 @@ export default function App() {
             {showAdvancedImport ? "Skjul avansert" : "Avansert import"}
           </button>
         </div>
+        <p className="import-helper">
+          Støttede filtyper: PDF, DOCX, TXT, MD, PNG, JPG og TIFF.
+          {!hasDesktopRuntime() ? " Lokal filimport krever desktop-appen." : ""}
+        </p>
         {showAdvancedImport ? (
-          <div className="advanced-import">
+          <div className="advanced-import document-import-advanced">
             <input
               value={documentPath}
               onChange={(event) => setDocumentPath(event.target.value)}
@@ -3436,7 +3578,7 @@ export default function App() {
           </div>
         ) : null}
         <div
-          className={`drop-zone ${isImporting ? "drop-zone--disabled" : ""}`}
+          className={`drop-zone document-import-dropzone ${isImporting ? "drop-zone--disabled" : ""}`}
           role="button"
           tabIndex={isImporting ? -1 : 0}
           aria-disabled={isImporting}
@@ -3446,9 +3588,9 @@ export default function App() {
           <strong>{isDragActive ? "Slipp dokumentene her" : "Dra dokumenter hit"}</strong>
           <span>Du kan slippe flere filer samtidig. Bruk Velg mappe for å hente en hel saksmappe rekursivt.</span>
         </div>
-        {hasDocuments || importQueue.length > 0 ? (
+        {importRunning || importQueue.length > 0 ? (
           <ImportStatusCard
-            title={importProgress.title}
+            title={importCardTitle}
             processedDocuments={importProgress.processedDocuments}
             totalDocuments={importProgress.totalDocuments}
             processedPages={importProgress.processedPages}
@@ -3456,100 +3598,91 @@ export default function App() {
             sourceObjects={importProgress.sourcesCreated || sources.length}
             phase={importProgress.currentPhaseLabel}
             etaLabel={importProgress.etaLabel}
-            isActive={isImporting || importProgress.state === "processing"}
+            progressPercent={importProgress.progressPercent}
+            remainingDocuments={importProgress.remainingDocuments}
+            processingDocuments={importProgress.processingDocuments}
+            statusMessage={importStatusMessage}
+            isActive={importRunning}
             detailsOpen={showImportQueueDetails}
             onToggleDetails={() => setShowImportQueueDetails((current) => !current)}
           />
         ) : null}
-        {importQueue.length > 0 && showImportQueueDetails ? (
-          <ImportProgressSummary
-            {...importProgress}
-            isImporting={isImporting || importProgress.state === "processing"}
-            attentionItems={progressAttentionItems}
-            failedItems={progressFailedItems}
-            detailsOpen={showImportQueueDetails}
-            statusMessage={importProgress.state === "processing" ? "Evida behandler dokumentene automatisk." : importUx.nextStep.message}
-            onShowAttentionItems={() => handleFirstUserPrimaryAction("review")}
-            onShowDetails={() => setShowImportQueueDetails((current) => !current)}
-            onOpenAttentionItem={(item) => void handlePreviewDocumentById(item.documentId || item.id)}
-            onApproveAttentionItem={(item) => {
-              const row = documentBasis.rows.find((candidate) => candidate.id === (item.documentId || item.id));
-              if (row) {
-                void handleDocumentApproval(row, "approve_for_ai");
-              }
-            }}
-          />
-        ) : null}
-        {false && importQueue.length > 0 ? (
-          <div className="import-queue" aria-live="polite">
-            <div className="import-queue__header">
-              <div>
-                <strong>{importUx.progressLabel}</strong>
-                <span>
-                  {importUx.progress.state === "processing" && importUx.progress.remainingDocuments > 0
-                    ? importUx.etaLabel
-                    : "Fase: Ferdig"}
-                </span>
-              </div>
-              <div className="panel-actions">
-                <button
-                  className="button-primary"
-                  type="button"
-                  onClick={() => handleFirstUserPrimaryAction(importUx.nextStep.primaryAction.target)}
-                >
-                  {importUx.nextStep.primaryAction.label}
-                </button>
-                <button className="button-secondary" type="button" onClick={() => setShowImportQueueDetails((current) => !current)}>
-                  {showImportQueueDetails ? "Skjul detaljer" : "Vis detaljer"}
-                </button>
-              </div>
+        {importError ? (
+          <div className="document-import-result document-import-result--error" role="alert">
+            <div>
+              <span className="eyebrow">Import stoppet</span>
+              <h3>Noe gikk galt under import</h3>
+              <p>Prøv igjen med samme dokumenter, eller importer filene i mindre grupper.</p>
             </div>
-            {showImportQueueDetails ? (
-              <div className="technical-disclosure__content">
-                {importQueue.map((item) => {
-                  const progress = importProgressPercent(item.status);
-                  const eta = importEta(item, importNow);
-                  return (
-                    <article key={item.path} className={`import-queue-row import-queue-row--${item.status}`}>
-                      <div>
-                        <strong>{item.name}</strong>
-                        <span>{item.detail}</span>
-                        <div className="import-progress" aria-label={`Importstatus ${progress} prosent`}>
-                          <span style={{ width: `${progress}%` }} />
-                        </div>
-                        <span className="import-eta">
-                          {eta}
-                          {item.startedAt && !["completed", "failed"].includes(item.status)
-                            ? ` · gått ${formatDuration(importNow - item.startedAt)}`
-                            : ""}
-                        </span>
-                      </div>
-                      <div className="import-queue-row__meta">
-                        {typeof item.pages === "number" ? <span>{countLabel(item.pages, "side", "sider")}</span> : null}
-                        {typeof item.sources === "number" ? <span>{countLabel(item.sources, "kildeutdrag", "kildeutdrag")}</span> : null}
-                        <span className={item.status === "completed" ? "status-chip status-chip--ok" : item.status === "failed" ? "status-chip status-chip--warn" : "status-chip"}>
-                          {importStatusLabel(item.status)}
-                        </span>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
+            <div className="panel-actions">
+              <button className="button-primary" type="button" onClick={handleChooseFiles}>Prøv igjen</button>
+              <button className="button-secondary" type="button" onClick={() => setShowImportQueueDetails((current) => !current)}>
+                {showImportQueueDetails ? "Skjul tekniske detaljer" : "Vis tekniske detaljer"}
+              </button>
+            </div>
+          </div>
+        ) : hasImportResult ? (
+          <div className={`document-import-result document-import-result--${needsReview ? "warning" : "success"}`}>
+            <div>
+              <span className="eyebrow">{needsReview ? "Kontroll" : "Ferdig"}</span>
+              <h3>{importResultTitle}</h3>
+              <p>{importOutcome.failed > 0 ? "Dokumentene er importert, men noen filer må kontrolleres manuelt." : importResultBody}</p>
+              <p className="muted">{importOutcome.failed > 0 && needsControlCount > 0 ? importResultBody : importResultNote}</p>
+            </div>
+            <div className="document-import-result__metrics" aria-label="Importresultat">
+              <span>{readyForSourcesCount} av {totalImportedCount || documents.length} kan brukes som kilder</span>
+              {needsControlCount > 0 ? <span>{needsControlCount} trenger kontroll</span> : null}
+              <span>{ocrLabel}</span>
+            </div>
+            <div className="panel-actions">
+              {needsReview ? (
+                <button className="button-primary" type="button" onClick={() => setActiveView("documentControl")}>
+                  Gå gjennom dokumenter som trenger kontroll
+                </button>
+              ) : canOpenSaksrom ? (
+                <button className="button-primary" type="button" onClick={() => setActiveView("caseRoom")}>
+                  Åpne Saksrom
+                </button>
+              ) : null}
+              {needsReview && canOpenSaksrom ? (
+                <button className="button-secondary" type="button" onClick={() => setActiveView("caseRoom")}>
+                  Åpne Saksrom
+                </button>
+              ) : null}
+              <button className="button-secondary" type="button" onClick={() => setShowImportQueueDetails((current) => !current)}>
+                {showImportQueueDetails ? "Skjul tekniske detaljer" : "Vis tekniske detaljer"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+        {showImportQueueDetails ? (
+          <div className="document-import-details" aria-label="Importdetaljer">
+            {importQueue.length > 0 ? (
+              importQueue.map((item) => (
+                <article key={item.path} className="document-import-detail-row">
+                  <div>
+                    <strong>{item.name}</strong>
+                    <span>{item.detail || importStatusLabel(item.status)}</span>
+                  </div>
+                  <div className="document-import-detail-row__meta">
+                    {typeof item.pages === "number" ? <span>{countLabel(item.pages, "side", "sider")}</span> : null}
+                    {typeof item.sources === "number" ? <span>{countLabel(item.sources, "kildeutdrag", "kildeutdrag")}</span> : null}
+                    <span>{importStatusLabel(item.status)}</span>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <p>{userCoverageExplanation}</p>
+            )}
+            {importError ? (
+              <details className="technical-disclosure">
+                <summary>Vis tekniske detaljer</summary>
+                <p>{importError}</p>
+              </details>
             ) : null}
           </div>
         ) : null}
-        {hasDocuments ? (
-          <div className="import-status-grid">
-            <span>PDF-sider <strong>{totalPages}</strong></span>
-            <span>Analyserte sider <strong>{analyzedPages}</strong></span>
-            <span>Sporbare kilder <strong>{sources.length}</strong></span>
-            <span>Tekststatus <strong>{pendingOcrPages > 0 ? `${pendingOcrPages} sider venter på tekst` : "Ingen ventende sider"}</strong></span>
-          </div>
-        ) : null}
-        {hasDocuments ? <div className="workflow-notice">{userCoverageExplanation}</div> : null}
-        {isImporting ? <div className="notice">Importerer dokumenter ...</div> : null}
-        {importError ? <div className="error-notice">{importError}</div> : null}
-        {lastImport ? <div className="notice">{lastImport}</div> : null}
+        </div>
       </section>
     );
   }
@@ -3600,7 +3733,7 @@ export default function App() {
               >
                 <div>
                   <strong>{item.name}</strong>
-                  <div className="muted">{item.id} · {item.jurisdiction}</div>
+                  <div className="muted">{item.case_number ? `Saksnr. ${item.case_number} · ` : ""}{item.jurisdiction}</div>
                 </div>
                 <div className="case-row__meta">
                   <span>{countLabel(item.document_count, "dokument", "dokumenter")}</span>
@@ -3879,7 +4012,7 @@ export default function App() {
                 </div>
                 <aside className={mode === "review" ? "control-document-actions" : "document-basis-row__actions"}>
                   <button className="button-secondary" type="button" onClick={() => void handlePreviewDocument(row)} disabled={!row.canPreview}>
-                    Åpne preview
+                  Åpne preview
                   </button>
                   {mode === "review" ? (
                     <label className="review-confirmation">
@@ -3922,7 +4055,13 @@ export default function App() {
                     </button>
                   ) : null}
                   {mode === "review" || mode === "unused" ? (
-                    <button className="button-secondary" type="button" onClick={() => void handleReplaceDocumentRow(row)}>
+                    <button
+                      className="button-secondary"
+                      type="button"
+                      disabled={!PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED}
+                      title={DOCUMENT_REPLACE_DISABLED_REASON}
+                      onClick={() => void handleReplaceDocumentRow(row)}
+                    >
                       Erstatt fil
                     </button>
                   ) : null}
@@ -3942,10 +4081,9 @@ export default function App() {
     const pendingBulkAction = bulkPlan.actions.find((action) => action.id === bulkConfirmAction);
     const previewSources = selectedRow ? sources.filter((source) => source.document_id === selectedRow.id).slice(0, 4) : [];
     const groupedRows = [
-      { title: "OCR trengs", rows: visibleReviewDocuments.filter((row) => row.pendingOcrPages > 0 || /ocr/i.test(row.reason)) },
-      { title: "Mangler tekst", rows: visibleReviewDocuments.filter((row) => row.sourceCount === 0 && row.pendingOcrPages === 0) },
       { title: "Feilet import", rows: visibleReviewDocuments.filter((row) => row.state === "needs_user_action") },
-      { title: "Annen kontroll", rows: visibleReviewDocuments.filter((row) => row.sourceCount > 0 && row.pendingOcrPages === 0 && row.state !== "needs_user_action") }
+      { title: "Mangler tekst", rows: visibleReviewDocuments.filter((row) => row.sourceCount === 0) },
+      { title: "Annen kontroll", rows: visibleReviewDocuments.filter((row) => row.sourceCount > 0 && row.state !== "needs_user_action") }
     ].filter((group) => group.rows.length > 0);
     const flatControlRows = groupedRows.flatMap((group) => group.rows);
 
@@ -4042,7 +4180,7 @@ export default function App() {
             <h3>Dokumentkontroll er fullført</h3>
             <p>
               {documentBasis.readyCount} dokumenter er klare for Saksrom. {pendingOcrPages > 0
-                ? `${pendingOcrPages} sider mangler tekst/OCR og er derfor ikke brukt som AI-kilder. Saksrom kan brukes foreløpig med ${Math.round(caseScopedSourceCoveragePercent)} % kildedekning.`
+                ? `${pendingOcrPages} sider gjores sokbare automatisk og brukes ikke som AI-kilder for de er klare. Saksrom kan brukes forelopig med ${Math.round(caseScopedSourceCoveragePercent)} % kildedekning.`
                 : "Kildedekningen er fullført for dokumentene som kan brukes som AI-kilder."}
             </p>
             <div className="panel-actions">
@@ -4055,7 +4193,7 @@ export default function App() {
                     Kjør OCR for full dekning
                   </button>
                   <button className="button-secondary" type="button" onClick={() => setActiveView("control")}>
-                    Se sider som mangler tekst
+                    Vis behandlingsstatus
                   </button>
                 </>
               ) : null}
@@ -4158,7 +4296,7 @@ export default function App() {
                     </section>
                     <section>
                       <h4>Teknisk</h4>
-                      <p>Hash {selectedRow.hash.slice(0, 16)} · Importert {selectedRow.importedAt}</p>
+              <p>Hash {selectedRow.hash.slice(0, 16)} · Importert {selectedRow.importedAt}</p>
                     </section>
                   </div>
                   <button className="button-secondary" type="button" onClick={() => void handlePreviewDocument(selectedRow)}>
@@ -4210,9 +4348,16 @@ export default function App() {
                   >
                     Hold utenfor kildegrunnlaget
                   </button>
-                  <button className="button-secondary" type="button" onClick={() => void handleReplaceDocumentRow(selectedRow)}>
+                  <button
+                    className="button-secondary"
+                    type="button"
+                    disabled={!PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED}
+                    title={DOCUMENT_REPLACE_DISABLED_REASON}
+                    onClick={() => void handleReplaceDocumentRow(selectedRow)}
+                  >
                     Erstatt fil
                   </button>
+                  <ReplacementDisabledNote />
                 </>
               ) : null}
             </aside>
@@ -4532,9 +4677,7 @@ export default function App() {
           <>
             {cases.length === 0 ? <CasePanel /> : null}
             <ImportPanel />
-            {hasDocuments && caseReadiness.sourceCoveragePercent < 80 ? <DocumentReadinessPanel /> : null}
-            <DocumentList />
-            <CaseList />
+            {hasDocuments && !(isImporting || importProgress.state === "processing") ? <DocumentList /> : null}
           </>
         );
       case "documentControl":
@@ -4772,7 +4915,7 @@ export default function App() {
             onOpenSettings={() => setSettingsOpen(true)}
           />
         ) : null}
-        {showNavigation && !isCaseRoomView ? (
+        {showNavigation && !isCaseRoomView && activeView !== "documents" ? (
           <header className="topbar">
             <div>
               <div className="topbar-labels">
@@ -4780,7 +4923,6 @@ export default function App() {
                 <span className="local-pill">Sikker lokalmodus</span>
               </div>
               <h1>{viewTitles[activeView]}</h1>
-              <p>{status}</p>
             </div>
             <div className="topbar-actions">
               <button
@@ -4807,7 +4949,7 @@ export default function App() {
           </header>
         ) : null}
 
-        {showNavigation && !isCaseRoomView ? (
+        {showNavigation && !isCaseRoomView && activeView !== "documents" ? (
           <div className="data-safety-banner" role="status">
             <strong>PRE-ALPHA</strong>
             <span>Bruk testdata. Lokal behandling er aktiv. Ekstern AI brukes bare når provider er eksplisitt konfigurert.</span>
@@ -4821,7 +4963,7 @@ export default function App() {
 
         {caseCreationError ? <div className="error-notice" role="alert">{caseCreationError}</div> : null}
 
-        {showNavigation && !isCaseRoomView && activeView !== "control" ? (
+        {showNavigation && !isCaseRoomView && activeView !== "control" && activeView !== "documents" ? (
           <div className="command-center-stack">
             <WorkroomHeader
               workroom={activeWorkroom}
@@ -4855,7 +4997,11 @@ export default function App() {
           nextAction={nextAction}
         />
       ) : null}
-      <SourcePreviewDrawer source={activeSource} onClose={() => setActiveSource(undefined)} />
+      <SourcePreviewDrawer
+        source={activeSource}
+        documentName={activeSource ? documents.find((d) => d.id === activeSource.document_id)?.original_name : undefined}
+        onClose={() => setActiveSource(undefined)}
+      />
       <DocumentPreviewDrawer
         document={previewDocument}
         sources={previewDocumentSources}
@@ -4871,6 +5017,8 @@ export default function App() {
         onClose={() => setPreviewDocument(null)}
         onApproveAsSource={(documentId) => void handleApprovePreviewDocument(documentId)}
         onExcludeFromCase={(documentId) => void handleExcludePreviewDocument(documentId)}
+        replaceEnabled={PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED}
+        replaceDisabledReason={DOCUMENT_REPLACE_DISABLED_REASON}
         onReplaceFile={(documentId) => void handleReplacePreviewDocument(documentId)}
         onOpenOriginalFolder={(path) => void handleOpenDocumentPreviewFolder(path)}
       />
@@ -4989,4 +5137,5 @@ export default function App() {
     </div>
   );
 }
+
 

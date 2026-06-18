@@ -1,4 +1,4 @@
-import type { SourceObjectSummary } from "../../types";
+﻿import type { SourceObjectSummary } from "../../types";
 import { EmptyStateAction } from "../EmptyStateAction";
 import { sourceTitle } from "./SourceButtonList";
 import type { TimelineItem } from "./types";
@@ -24,7 +24,7 @@ export function ChronologyView({ items, sourcesById, onBuild, onOpenSource, buil
       {items.length === 0 ? (
         <EmptyStateAction
           title="Ingen kronologi bygget ennå."
-          description="Kronologi er en egen arbeidsflate og viser ikke r\u00e5 tekstutdrag som hovedinnhold."
+          description="Kronologi er en egen arbeidsflate og viser ikke rå tekstutdrag som hovedinnhold."
           actionLabel={buildLabel}
           onAction={onBuild}
         />
