@@ -78,8 +78,6 @@ import { ReadinessStatusCard } from "./components/readiness/ReadinessStatusCard"
 import { CaseRoomGate } from "./components/case-room/CaseRoomGate";
 import { StatusCard } from "./components/StatusCard";
 import { CaseRoomView } from "./components/CaseRoomView";
-import { CaseVitalityBar } from "./components/CaseVitalityBar";
-import { WorkroomHeader } from "./components/WorkroomHeader";
 import { SettingsView } from "./components/settings/SettingsView";
 import { ArgumentsView } from "./components/workrooms/ArgumentsView";
 import { ChronologyView } from "./components/workrooms/ChronologyView";
@@ -115,7 +113,6 @@ import {
 import type { LegalCommand } from "./features/legalCommands/legalCommands";
 import { useWindowCaseContext } from "./lib/windowCaseContext";
 import { useEvidaShortcuts } from "./lib/shortcuts";
-import { workroomKeyForView } from "./lib/workroomTheme";
 import {
   deriveDocumentBasisSummary,
   type DocumentBasisRow
@@ -1551,26 +1548,7 @@ export default function App() {
     buildEvidence
   ]);
 
-  const caseVitality = {
-    sourceCoveragePct: hasDocuments ? caseScopedSourceCoveragePercent : undefined,
-    ocrCoveragePct: ocrCoveragePercent,
-    indexedDocumentCount: hasDocuments ? caseCoverage.processedDocuments : undefined,
-    totalDocumentCount: hasDocuments ? caseCoverage.totalDocuments : undefined,
-    controlStatus: !hasDocuments ? "Venter" : visibleReviewDocuments.length === 0 ? "Fullført" : `${visibleReviewDocuments.length} igjen`,
-    ocrStatus: !hasDocuments ? "Venter" : pendingOcrPages > 0 ? `${pendingOcrPages} sider gjenstår` : "Fullført",
-    analysisRoomStatus: !hasDocuments
-      ? "Venter"
-      : roomAvailabilityByView.caseRoom?.enabled
-        ? roomAvailabilityByView.caseRoom.mode === "preliminary"
-          ? "Foreløpig åpnet"
-          : "Klar"
-        : roomAvailabilityByView.caseRoom?.label || "Venter",
-    unresolvedConflictCount: conflictRows.length,
-    riskLevel: selectedCase?.risk_level || "unknown",
-    nextBestAction: nextAction.title
-  };
-
-  const importDocuments = useCallback(
+const importDocuments = useCallback(
     async (paths: string[]) => {
       const rawPaths = paths.map((path) => path.trim()).filter(Boolean);
       if (rawPaths.length === 0) {
@@ -4852,7 +4830,6 @@ export default function App() {
   }
 
   const isCaseRoomView = activeView === "caseRoom";
-  const activeWorkroom = workroomKeyForView(activeView);
   const showNavigation = isWorkspaceUnlocked;
   const hasOpenModal =
     showImportCompletion ||
@@ -4949,37 +4926,9 @@ export default function App() {
           </header>
         ) : null}
 
-        {showNavigation && !isCaseRoomView && activeView !== "documents" ? (
-          <div className="data-safety-banner" role="status">
-            <strong>PRE-ALPHA</strong>
-            <span>Bruk testdata. Lokal behandling er aktiv. Ekstern AI brukes bare når provider er eksplisitt konfigurert.</span>
-            {dbSecurity?.encrypted_at_rest ? (
-              <span>Kryptert lagring: {dbSecurity.cipher}</span>
-            ) : (
-              <span>Kryptering ikke verifisert for ekte klientdata.</span>
-            )}
-          </div>
-        ) : null}
 
         {caseCreationError ? <div className="error-notice" role="alert">{caseCreationError}</div> : null}
 
-        {showNavigation && !isCaseRoomView && activeView !== "control" && activeView !== "documents" ? (
-          <div className="command-center-stack">
-            <WorkroomHeader
-              workroom={activeWorkroom}
-              stats={[
-                { label: "Dokumentkontroll", value: !hasDocuments ? "Venter" : documentControlComplete ? "Fullført" : `${visibleReviewDocuments.length} igjen`, tone: documentControlComplete ? "ok" : "warn" },
-                { label: "Kildedekning", value: hasDocuments ? `${Math.round(caseScopedSourceCoveragePercent)} %` : "Venter på dokumenter", tone: caseScopedSourceCoveragePercent >= 100 ? "ok" : "warn" },
-                { label: "OCR", value: !hasDocuments ? "Venter" : pendingOcrPages > 0 ? `${pendingOcrPages} sider gjenstår` : "Fullført", tone: pendingOcrPages > 0 ? "warn" : "ok" },
-                { label: "Analyse-rom", value: roomAvailabilityByView.caseRoom?.enabled ? roomAvailabilityByView.caseRoom.mode === "preliminary" ? "Foreløpig åpnet" : "Klar" : roomAvailabilityByView.caseRoom?.label || "Venter", tone: roomAvailabilityByView.caseRoom?.enabled ? "ok" : "warn" }
-              ]}
-            />
-            <CaseVitalityBar vitality={caseVitality} />
-          </div>
-        ) : null}
-        {showNavigation && isCaseRoomView ? (
-          <CaseVitalityBar vitality={caseVitality} compact />
-        ) : null}
 
         {renderView()}
       </main>
