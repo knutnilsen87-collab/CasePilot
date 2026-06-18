@@ -3567,7 +3567,7 @@ const importDocuments = useCallback(
           <strong>{isDragActive ? "Slipp dokumentene her" : "Dra dokumenter hit"}</strong>
           <span>Du kan slippe flere filer samtidig. Bruk Velg mappe for å hente en hel saksmappe rekursivt.</span>
         </div>
-        {importRunning || importQueue.length > 0 ? (
+        {importRunning ? (
           <ImportStatusCard
             title={importCardTitle}
             processedDocuments={importProgress.processedDocuments}
