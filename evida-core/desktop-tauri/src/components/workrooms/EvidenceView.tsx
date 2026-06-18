@@ -1,4 +1,4 @@
-﻿import type { SourceObjectSummary } from "../../types";
+import type { DocumentSummary, SourceObjectSummary } from "../../types";
 import { EmptyStateAction } from "../EmptyStateAction";
 import { SourceButtonList } from "./SourceButtonList";
 import type { EvidenceRow } from "./types";
@@ -6,12 +6,13 @@ import type { EvidenceRow } from "./types";
 interface EvidenceViewProps {
   rows: EvidenceRow[];
   sourcesById: Map<string, SourceObjectSummary>;
+  documentsById?: Map<string, DocumentSummary>;
   onBuild: () => void;
   onOpenSource: (sourceId: string) => void;
   buildLabel?: string;
 }
 
-export function EvidenceView({ rows, sourcesById, onBuild, onOpenSource, buildLabel = "Bygg bevismatrise" }: EvidenceViewProps) {
+export function EvidenceView({ rows, sourcesById, documentsById, onBuild, onOpenSource, buildLabel = "Bygg bevismatrise" }: EvidenceViewProps) {
   return (
     <section className="panel">
       <div className="panel-header">
@@ -38,8 +39,8 @@ export function EvidenceView({ rows, sourcesById, onBuild, onOpenSource, buildLa
           {rows.map((row) => (
             <div className="work-row" key={row.id}>
               <strong>{row.claim}</strong>
-              <SourceButtonList ids={row.supporting} sourcesById={sourcesById} onOpenSource={onOpenSource} />
-              <SourceButtonList ids={row.weakening} sourcesById={sourcesById} onOpenSource={onOpenSource} />
+              <SourceButtonList ids={row.supporting} sourcesById={sourcesById} documentsById={documentsById} onOpenSource={onOpenSource} />
+              <SourceButtonList ids={row.weakening} sourcesById={sourcesById} documentsById={documentsById} onOpenSource={onOpenSource} />
               <span className={`strength-badge strength-badge--${row.strength.toLowerCase()}`}>{row.strength}</span>
               <span>{row.status}</span>
             </div>

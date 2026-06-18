@@ -757,6 +757,7 @@ export default function App() {
   const automaticTextRecognitionAvailable =
     documentEngineStatus?.automatic_text_recognition_available ?? false;
   const sourceById = useMemo(() => new Map(sources.map((source) => [source.id, source])), [sources]);
+  const documentsById = useMemo(() => new Map(documents.map((d) => [d.id, d])), [documents]);
   const needsOcr = documents.some((document) =>
     ["needs_ocr", "partial_needs_ocr", "failed"].includes(document.ocr_status)
   );
@@ -3499,14 +3500,14 @@ const importDocuments = useCallback(
         onDragLeave={() => setIsDragActive(false)}
         onDragOver={handleDragOver}
       >
-        <div className="document-import-status-strip" role="status" aria-label="Saks- og importstatus">
-          <span>Lokal modus aktiv</span>
-          <span>Pre-alpha: testdata only</span>
-          <span>{countLabel(documents.length, "dokument", "dokumenter")}</span>
-          <span>{totalPages > 0 ? `${totalPages} sider` : "Sider beregnes"}</span>
-          <span>{readyForSourcesCount} kan brukes som kilder</span>
-          <span>{ocrLabel}</span>
-        </div>
+        {documents.length > 0 ? (
+          <div className="document-import-status-strip" role="status" aria-label="Saks- og importstatus">
+            <span>{countLabel(documents.length, "dokument", "dokumenter")}</span>
+            <span>{totalPages > 0 ? `${totalPages} sider` : "Sider beregnes"}</span>
+            <span>{readyForSourcesCount} kan brukes som kilder</span>
+            <span>{ocrLabel}</span>
+          </div>
+        ) : null}
 
         <div className="document-import-workspace">
           <div>
@@ -4724,6 +4725,7 @@ const importDocuments = useCallback(
             <ChronologyView
               items={timelineItems}
               sourcesById={sourceById}
+              documentsById={documentsById}
               onBuild={buildChronology}
               onOpenSource={openSource}
               buildLabel={roomAvailabilityByView.chronology?.primaryActionLabel}
@@ -4741,6 +4743,7 @@ const importDocuments = useCallback(
             <EvidenceView
               rows={evidenceRows}
               sourcesById={sourceById}
+              documentsById={documentsById}
               onBuild={buildEvidence}
               onOpenSource={openSource}
               buildLabel={roomAvailabilityByView.evidence?.primaryActionLabel}

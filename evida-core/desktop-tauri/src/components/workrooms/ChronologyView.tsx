@@ -1,4 +1,4 @@
-﻿import type { SourceObjectSummary } from "../../types";
+import type { DocumentSummary, SourceObjectSummary } from "../../types";
 import { EmptyStateAction } from "../EmptyStateAction";
 import { sourceTitle } from "./SourceButtonList";
 import type { TimelineItem } from "./types";
@@ -6,12 +6,13 @@ import type { TimelineItem } from "./types";
 interface ChronologyViewProps {
   items: TimelineItem[];
   sourcesById: Map<string, SourceObjectSummary>;
+  documentsById?: Map<string, DocumentSummary>;
   onBuild: () => void;
   onOpenSource: (sourceId: string) => void;
   buildLabel?: string;
 }
 
-export function ChronologyView({ items, sourcesById, onBuild, onOpenSource, buildLabel = "Bygg kronologi fra kilder" }: ChronologyViewProps) {
+export function ChronologyView({ items, sourcesById, documentsById, onBuild, onOpenSource, buildLabel = "Bygg kronologi fra kilder" }: ChronologyViewProps) {
   return (
     <section className="panel">
       <div className="panel-header">
@@ -40,7 +41,7 @@ export function ChronologyView({ items, sourcesById, onBuild, onOpenSource, buil
               <span className="timeline-date">{item.date}</span>
               <strong>{item.event}</strong>
               <button className="link-button" onClick={() => onOpenSource(item.sourceId)}>
-                {sourceTitle(sourcesById.get(item.sourceId))}
+                {sourceTitle(sourcesById.get(item.sourceId), documentsById)}
               </button>
               <span>{item.status}</span>
               <span>{item.uncertainty}</span>

@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
@@ -59,13 +59,14 @@ assert.equal(summary.progressLabel, "10 av 39 dokumenter behandlet", "39-documen
 assert.match(summary.etaLabel, /^ETA: ca\. \d+ min \d+ sek$/, "ETA is visible for active 39-document import");
 assert.equal(summary.progress.state, "processing", "active import is not marked complete while documents remain");
 assert.equal(summary.progress.title, "Behandler dokumenter", "processing import uses the non-terminal title");
+assert.equal(summary.progress.processingDocuments, 1, "active import shows the current document, not every remaining queued document");
 assert.equal(summary.nextStep.primaryAction.label, "Start kontroll", "review action is a clear primary CTA");
 assert.deepEqual(
   summary.gapMessages,
   [
     "Importen behandler fortsatt dokumenter. Vent til behandlingen er ferdig før du konkluderer.",
     "1 dokument trenger manuell kontroll før de kan brukes som kildegrunnlag.",
-    "1 dokument ble ikke brukt som kildegrunnlag. Erstatt fil eller hold dem utenfor saken."
+    "1 dokument ble ikke brukt som kildegrunnlag. Hold dem utenfor saken til produksjonsklar erstatning eller OCR er verifisert."
   ],
   "import modal lists concrete gaps"
 );
@@ -150,8 +151,10 @@ const outcome = deriveImportOutcome({
 const nextAction = deriveNextAction(outcome);
 const outcomeView = deriveImportOutcomeViewModel(outcome, nextAction);
 assert.equal(nextAction.id, "control_documents", "manual review routes to document control");
-assert.equal(nextAction.primaryLabel, "Kontroller 2 dokumenter", "next action includes the full control queue count");
-assert.equal(outcomeView.title, "Import fullført — kontroll kreves", "import outcome modal uses decision-oriented title");
+assert.equal(nextAction.primaryLabel, "Gå gjennom dokumenter som trenger kontroll", "next action gives one calm primary control CTA");
+assert.equal(outcomeView.title, "Import fullført", "import outcome keeps a calm completed title when control is needed");
+assert.equal(outcomeView.primaryLine, "1 av 3 dokumenter kan brukes som kilder", "import outcome leads with source-ready count");
+assert.equal(outcomeView.secondaryLine, "2 dokumenter trenger kontroll før trygg analyse.", "import outcome explains control count without leading with a percentage");
 assert.equal(outcomeView.showEta, false, "finished import outcome hides ETA");
 
 const terminalOutcome = deriveImportOutcome({
@@ -199,13 +202,7 @@ const aiReadyIds = getAiReadyDocumentIds([
 ]);
 assert.deepEqual([...aiReadyIds], ["DOC-ready"], "AI-ready source set excludes unapproved documents");
 
-const appSource = (await readFile(new URL("../src/App.tsx", import.meta.url), "utf8"))
-  .replace(/Å/g, "Å")
-  .replace(/å/g, "å")
-  .replace(/Ø/g, "Ø")
-  .replace(/ø/g, "ø")
-  .replace(/Æ/g, "Æ")
-  .replace(/æ/g, "æ");
+const appSource = await readFile(new URL("../src/App.tsx", import.meta.url), "utf8");
 assert.match(appSource, /pne preview/, "review row exposes a direct preview action");
 assert.match(appSource, /handlePreviewDocument\(row\)/, "preview action targets the selected document row");
 assert.match(appSource, /canApproveSourceAfterPreview\(Boolean\(reviewApprovalChecks\[row\.id\]\)\)/, "approve button requires the confirmation checkbox");
@@ -223,9 +220,25 @@ assert.match(appSource, /suppressProgressActions=\{showImportCompletion\}/, "Cas
 assert.match(appSource, /DocumentPreviewDrawer/, "preview opens inside Evida instead of Explorer");
 assert.match(appSource, /documents-needing-control/, "attention navigation has a stable section target");
 assert.match(appSource, /DocumentControlView/, "dedicated document control view exists");
+assert.match(appSource, /setActiveView\("documents"\)/, "import keeps the user on Dokumenter while documents are loading");
+assert.match(appSource, /setShowImportQueueDetails\(false\)/, "import keeps detail rows collapsed while loading");
+assert.match(appSource, /document-import-status-strip/, "document import uses one compact status strip");
+assert.match(appSource, /Sikker lokalmodus/, "local mode is visible in the topbar");
+assert.match(appSource, /PRE-ALPHA/, "pre-alpha status is visible in the topbar evaluation pill");
+assert.match(appSource, /Gå gjennom dokumenter som trenger kontroll/, "needs-review import state has one clear primary next action");
+assert.match(appSource, /document-import-details/, "technical import details are progressively disclosed");
+assert.match(appSource, /Teknisk feil under import/, "raw technical import errors are mapped to safe default copy");
+assert.match(appSource, /Vis tekniske detaljer/, "technical details affordance is explicit");
+assert.match(appSource, /Åpne Saksrom/, "Norwegian Å renders as a complete visible label");
+assert.equal(appSource.includes("\u00c3\u2026pne Saksrom"), false, "mojibake Saksrom label is removed");
+assert.equal(appSource.includes("\u00c3\u0192"), false, "double-encoded Norwegian text is removed from App");
+assert.match(appSource, /activeView !== "documents"/, "document screen hides global workroom dashboard noise");
 assert.match(appSource, /Godkjenn som kilde/, "document control can approve a document as a citable source");
 assert.match(appSource, /Kontrollert, men ikke siterbar/, "document control separates handled-but-not-citable documents");
 const importProgressSummarySource = await readFile(new URL("../src/components/ImportProgressSummary.tsx", import.meta.url), "utf8");
+const importStatusCardSource = await readFile(new URL("../src/components/documents/ImportStatusCard.tsx", import.meta.url), "utf8");
+assert.match(importStatusCardSource, /role="progressbar"/, "import status card always shows visible loading progress");
+assert.match(importStatusCardSource, /Import pågår/, "import status card names active import state");
 assert.match(importProgressSummarySource, /Estimert tid igjen/, "active import progress exposes a dedicated ETA block");
 assert.match(importProgressSummarySource, /Beregner tid igjen/, "active import progress has explicit ETA fallback copy");
 const caseRoomSource = await readFile(new URL("../src/components/CaseRoomView.tsx", import.meta.url), "utf8");
@@ -247,4 +260,5 @@ for (const staleLabel of ["View details", "Run OCR", "Open preliminary Saksrom",
 }
 
 console.log("first-user import UX tests passed.");
+
 

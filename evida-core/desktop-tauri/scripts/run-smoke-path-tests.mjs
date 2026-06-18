@@ -104,8 +104,8 @@ assert.ok(styles.includes("min-height: 214px"), "import status grid reserves sta
 assert.ok(caseRoom.includes("hasActiveProcessing || userScrolledRecently"), "Saksrom auto-reveal is blocked while processing is active");
 assert.ok(app.includes("data-visual-mode={visualMode}"), "app applies persisted visual mode to root shell");
 assert.ok(app.includes("VISUAL_MODE_STORAGE_KEY"), "visual mode persists in localStorage");
-assert.ok(app.includes("CaseVitalityBar"), "case vitality bar is mounted");
-assert.ok(app.includes("WorkroomHeader"), "workroom headers are mounted");
+assert.ok(app.includes("CaseHeader"), "slim case header is mounted in App.tsx");
+assert.ok(app.includes("onOpenCaseSwitcher"), "case header exposes case switcher action");
 assert.ok(statusCard.includes("progressbar"), "status cards expose progress values accessibly");
 assert.ok(evidenceChip.includes("aria-label"), "evidence chips have accessible labels");
 for (const [name, source] of [
