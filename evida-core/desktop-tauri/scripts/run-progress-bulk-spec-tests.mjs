@@ -16,7 +16,12 @@ async function importTs(path) {
 }
 
 const { deriveCasePreparationProgress, getChatPlaceholder } = await importTs("../src/features/casePreparation/casePreparation.logic.ts");
-const { deriveDocumentControlBulkPlan, canBulkMarkControlled } = await importTs("../src/features/documentControl/documentControl.logic.ts");
+const {
+  DOCUMENT_REPLACE_DISABLED_REASON,
+  PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED,
+  deriveDocumentControlBulkPlan,
+  canBulkMarkControlled
+} = await importTs("../src/features/documentControl/documentControl.logic.ts");
 
 const locked = deriveCasePreparationProgress({
   totalDocuments: 3,
@@ -99,16 +104,22 @@ const plan = deriveDocumentControlBulkPlan([controllable, ocr, failed]);
 
 assert.equal(canBulkMarkControlled(controllable), true);
 assert.equal(canBulkMarkControlled(failed), false, "hard failures cannot be bulk-marked controlled");
-assert.deepEqual(plan.eligibleForControlled.map((item) => item.id), ["DOC-ready", "DOC-ocr"]);
+assert.equal(canBulkMarkControlled(ocr), false, "OCR pipeline work cannot be bulk-marked controlled");
+assert.deepEqual(plan.eligibleForControlled.map((item) => item.id), ["DOC-ready"]);
 assert.deepEqual(plan.eligibleAsSource.map((item) => item.id), ["DOC-ready"]);
-assert.deepEqual(plan.eligibleNotCitable.map((item) => item.id), ["DOC-ocr"]);
+assert.deepEqual(plan.eligibleNotCitable.map((item) => item.id), []);
 assert.deepEqual(plan.replaceRows.map((item) => item.id), ["DOC-failed"]);
+assert.equal(PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED, false, "replace stays disabled until production-grade supersede exists");
 assert.equal(plan.actions.find((action) => action.id === "approve_as_source")?.requiresConfirmation, true);
 assert.equal(plan.actions.find((action) => action.id === "mark_not_citable")?.requiresConfirmation, true);
-assert.equal(plan.actions.find((action) => action.id === "run_ocr")?.enabled, true);
+assert.equal(plan.actions.find((action) => action.id === "run_ocr")?.enabled, false);
+assert.equal(plan.actions.find((action) => action.id === "run_ocr")?.label, "OCR kjores automatisk");
+assert.equal(plan.actions.find((action) => action.id === "replace")?.enabled, false);
+assert.equal(plan.actions.find((action) => action.id === "replace")?.description, DOCUMENT_REPLACE_DISABLED_REASON);
 
 const appSource = await readFile(new URL("../src/App.tsx", import.meta.url), "utf8");
 const caseRoomSource = await readFile(new URL("../src/components/CaseRoomView.tsx", import.meta.url), "utf8");
+const documentPreviewDrawerSource = await readFile(new URL("../src/components/DocumentPreviewDrawer.tsx", import.meta.url), "utf8");
 const progressComponentSource = await readFile(new URL("../src/components/CasePreparationProgress.tsx", import.meta.url), "utf8");
 assert.match(appSource, /data-testid="bulk-selection-bar"/);
 assert.match(appSource, /data-testid="bulk-confirm-dialog"/);
@@ -117,8 +128,14 @@ assert.match(appSource, /role="listbox"/);
 assert.match(appSource, /aria-selected=\{selectedRow\?\.id === row\.id\}/);
 assert.match(appSource, /Godkjenn som kilde/);
 assert.match(appSource, /Kontrollert, men ikke siterbar/);
+assert.match(appSource, /replaceEnabled=\{PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED\}/);
+assert.match(appSource, /DOCUMENT_REPLACE_DISABLED_REASON/);
+assert.match(appSource, /function ReplacementDisabledNote/);
+assert.match(appSource, /Erstatt fil er blokkert for denne testutgaven/);
 assert.match(appSource, /skipRefresh: true/);
-assert.match(appSource, /suppressProgressActions=\{showImportCompletion\}/);
+assert.match(appSource, /suppressProgressActions=\{false\}/);
+assert.match(documentPreviewDrawerSource, /aria-describedby=\{showReplaceDisabledNote \? replaceDisabledNoteId : undefined\}/);
+assert.match(documentPreviewDrawerSource, /replace-disabled-note--drawer/);
 assert.match(caseRoomSource, /preparationProgress\.chatPlaceholder/);
 assert.match(caseRoomSource, /!suppressProgressActions/);
 assert.match(caseRoomSource, /CasePreparationProgress progress=\{preparationProgress\}/);

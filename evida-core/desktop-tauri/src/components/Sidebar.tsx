@@ -103,7 +103,7 @@ function sidebarAvailabilityFor(
   const unlocked = isUnlocked(item.unlock, hasDocuments, readinessVerdict);
   return {
     unlocked,
-    stateLabel: unlocked ? "Klar" : item.unlock === "documents" ? "Krever kilder" : "Krever dokumentkontroll",
+    stateLabel: unlocked ? "Klar" : item.unlock === "documents" ? "Krever kilder" : "Kontroll kreves",
     reason: unlocked ? item.label : lockedReason(item.unlock)
   };
 }
@@ -159,11 +159,12 @@ export function Sidebar({
                       <WorkroomIcon name={theme.icon} size={17} />
                     </span>
                     <span className="sidebar-item__label">{theme.label}</span>
-                    <span className={`sidebar-item__state sidebar-item__state--${unlocked ? "open" : "locked"}`}>
-                      {availability.stateLabel}
-                    </span>
+                    {unlocked ? (
+                      <span className="sidebar-item__state sidebar-item__state--open">
+                        {availability.stateLabel}
+                      </span>
+                    ) : null}
                   </button>
-                  {!unlocked ? <small className="sidebar-item__helper">{availability.reason}</small> : null}
                 </li>
               );
             })}

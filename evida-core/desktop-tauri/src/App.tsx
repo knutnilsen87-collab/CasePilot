@@ -539,7 +539,6 @@ export default function App() {
   const [ocrResults, setOcrResults] = useState<OcrResult[]>([]);
   const [manualReviewItems, setManualReviewItems] = useState<ManualReviewItem[]>([]);
   const [evidenceQuality, setEvidenceQuality] = useState<EvidenceQualityReport | null>(null);
-  const [showImportCompletion, setShowImportCompletion] = useState(false);
   const [audit, setAudit] = useState<AuditEvent[]>([]);
   const [selectedCaseId, setSelectedCaseId] = useState<string>(windowCase.context.caseId || "");
   const [caseName, setCaseName] = useState("Ny prosessak");
@@ -553,7 +552,6 @@ export default function App() {
   const [isCreatingCase, setIsCreatingCase] = useState(false);
   const [showAdvancedImport, setShowAdvancedImport] = useState(false);
   const [showImportQueueDetails, setShowImportQueueDetails] = useState(false);
-  const [showImportCompletionDetails, setShowImportCompletionDetails] = useState(false);
   const [showControlTechnicalDetails, setShowControlTechnicalDetails] = useState(false);
   const [controlAttentionExpanded, setControlAttentionExpanded] = useState(false);
   const [controlAttentionHighlighted, setControlAttentionHighlighted] = useState(false);
@@ -1691,7 +1689,7 @@ const importDocuments = useCallback(
         const nextHealth = await getImportHealth(activeCaseId);
         setImportHealth(nextHealth);
         setImportItems(nextHealth.items);
-        setShowImportCompletion(true);
+        void 0; // import completion handled inline in ImportPanel
         setProcessingLog((current) => [
           ...current,
           completedSession.source_coverage_percent >= 100 && nextHealth.overall_status === "ready"
@@ -3104,97 +3102,6 @@ const importDocuments = useCallback(
     );
   }
 
-  function ImportCompletionModal() {
-    if (!showImportCompletion || !importHealth?.latest_session) {
-      return null;
-    }
-    const session = importHealth.latest_session;
-    return (
-      <div className="modal-backdrop" role="presentation">
-        <section
-          className="modal-panel import-completion-modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="import-outcome-title"
-          tabIndex={-1}
-          onKeyDown={(event) => closeDialogOnEscape(event, () => setShowImportCompletion(false))}
-        >
-          <div className="panel-header">
-            <div>
-              <div className="eyebrow">Importstatus</div>
-              <h2 id="import-outcome-title">{importOutcomeView.title}</h2>
-              <p>{importOutcomeView.primaryLine}</p>
-              <p>{importOutcomeView.secondaryLine}</p>
-              <p className="muted">
-                {importOutcomeView.showEta && importProgress.state === "processing" && importProgress.remainingDocuments > 0
-                  ? importProgress.etaLabel
-                  : "Fase: Ferdig"}
-              </p>
-            </div>
-            <button className="button-ghost" type="button" onClick={() => setShowImportCompletion(false)}>Lukk</button>
-          </div>
-          <ImportProgressSummary
-            {...importProgress}
-            title={importOutcomeView.title}
-            isImporting={importProgress.state === "processing"}
-            attentionItems={progressAttentionItems}
-            failedItems={progressFailedItems}
-            detailsOpen={showImportCompletionDetails}
-            statusMessage={importNextAction.description}
-            onOpenAttentionItem={(item) => void handlePreviewDocumentById(item.documentId || item.id)}
-            onApproveAttentionItem={(item) => {
-              const row = documentBasis.rows.find((candidate) => candidate.id === (item.documentId || item.id));
-              if (row) {
-                void handleDocumentApproval(row, "approve_for_ai");
-              }
-            }}
-          />
-        {importOutcomeGapMessages.length > 0 ? (
-          <div className="warning-notice" role="alert">
-            <strong>Mangler nå:</strong>
-            <ul className="compact-gap-list">
-                {importOutcomeGapMessages.map((message) => (
-                  <li key={message}>{message}</li>
-                ))}
-              </ul>
-            </div>
-          ) : (
-            <p className="notice">Importen er ferdig, og ingen importmangler er registrert.</p>
-          )}
-          <div className="panel-actions">
-            <button
-              className="button-primary"
-              type="button"
-              autoFocus
-              onClick={() => {
-                setShowImportCompletion(false);
-                handleImportNextAction();
-              }}
-            >
-              {importOutcomeView.primaryCta}
-            </button>
-            <button className="button-secondary" type="button" onClick={() => setShowImportCompletionDetails((current) => !current)}>
-              {showImportCompletionDetails ? "Skjul detaljer" : importOutcomeView.secondaryCta}
-            </button>
-          </div>
-          {showImportCompletionDetails ? (
-            <div className="technical-disclosure__content">
-              <div className="import-health-overview">
-                <StatusCard label="Importert" value={session.files_ready + session.files_partial} detail="klar eller delvis" />
-                <StatusCard label="Krever OCR" value={session.files_requires_ocr} detail={`${session.pages_requires_ocr} sider`} tone={session.files_requires_ocr ? "warn" : "ok"} />
-                <StatusCard label="Feilet" value={session.files_failed} detail="ikke brukt som kilde" tone={session.files_failed ? "warn" : "ok"} />
-                <StatusCard label="Duplikater" value={session.files_duplicate} detail="ikke importert på nytt" />
-                <StatusCard label="Kildedekning" value={`${Math.round(importHealth.source_coverage_percent)} %`} detail="sakens importstatus" tone={importHealth.source_coverage_percent < 100 ? "warn" : "ok"} />
-              </div>
-              <div className="panel-actions">
-                <button className="button-secondary" type="button" onClick={() => { setShowImportCompletion(false); void handleReindex(); }}>Kjør OCR</button>
-              </div>
-            </div>
-          ) : null}
-        </section>
-      </div>
-    );
-  }
 
   function ReadinessGate({ title, reason }: { title: string; reason?: string }) {
     return (
@@ -3455,7 +3362,6 @@ const importDocuments = useCallback(
     const hasImportResult = !importRunning && (hasDocuments || importQueue.length > 0 || Boolean(lastImport));
     const needsReview =
       importOutcome.manualReviewRequired > 0 ||
-      importOutcome.ocrRequired > 0 ||
       importOutcome.failed > 0 ||
       importOutcome.notUsedAsSource > 0 ||
       importNextAction.id === "control_documents" ||
@@ -3470,21 +3376,15 @@ const importDocuments = useCallback(
     );
     const needsControlCount = Math.max(
       importOutcome.manualReviewRequired + importOutcome.notUsedAsSource + importOutcome.failed,
-      totalImportedCount - readyForSourcesCount,
       0
     );
-    const ocrLabel = !hasDocuments ? "Tekst venter" : pendingOcrPages > 0 ? "Tekstkontroll trengs" : "Tekst klar";
-    const importResultTitle = importOutcome.failed > 0 ? "Noen dokumenter kunne ikke leses" : "Import fullført";
+    const importResultTitle = importOutcome.failed > 0 ? "Noen dokumenter trenger handling" : "Import fullført";
     const importResultBody =
       totalImportedCount > 0 && needsControlCount > 0
-        ? `${readyForSourcesCount} av ${totalImportedCount} dokumenter kan brukes som kilder. ${needsControlCount} dokument${needsControlCount === 1 ? "" : "er"} trenger kontroll før trygg analyse.`
+        ? `${readyForSourcesCount} av ${totalImportedCount} dokumenter er klare. ${needsControlCount} dokument${needsControlCount === 1 ? "" : "er"} må gjennomgås.`
         : totalImportedCount > 0
           ? "Alle dokumenter er klare for Saksrom."
           : "Dokumentene er importert.";
-    const importResultNote =
-      needsControlCount > 0
-        ? "Du kan åpne Saksrom nå, men analysen blir tryggere etter kontroll."
-        : "Du kan åpne Saksrom nå.";
     const importCardTitle = importRunning ? "Importerer dokumenter" : importProgress.title;
     const importStatusMessage = importRunning
       ? activeImportItem
@@ -3505,7 +3405,7 @@ const importDocuments = useCallback(
             <span>{countLabel(documents.length, "dokument", "dokumenter")}</span>
             <span>{totalPages > 0 ? `${totalPages} sider` : "Sider beregnes"}</span>
             <span>{readyForSourcesCount} kan brukes som kilder</span>
-            <span>{ocrLabel}</span>
+            {pendingOcrPages > 0 ? <span className="muted">{pendingOcrPages} sider hentes automatisk</span> : null}
           </div>
         ) : null}
 
@@ -3605,32 +3505,21 @@ const importDocuments = useCallback(
             <div>
               <span className="eyebrow">{needsReview ? "Kontroll" : "Ferdig"}</span>
               <h3>{importResultTitle}</h3>
-              <p>{importOutcome.failed > 0 ? "Dokumentene er importert, men noen filer må kontrolleres manuelt." : importResultBody}</p>
-              <p className="muted">{importOutcome.failed > 0 && needsControlCount > 0 ? importResultBody : importResultNote}</p>
-            </div>
-            <div className="document-import-result__metrics" aria-label="Importresultat">
-              <span>{readyForSourcesCount} av {totalImportedCount || documents.length} kan brukes som kilder</span>
-              {needsControlCount > 0 ? <span>{needsControlCount} trenger kontroll</span> : null}
-              <span>{ocrLabel}</span>
+              <p>{importResultBody}</p>
+              {pendingOcrPages > 0 ? (
+                <p className="muted">{pendingOcrPages} sider hentes automatisk — du trenger ikke gjøre noe.</p>
+              ) : null}
             </div>
             <div className="panel-actions">
               {needsReview ? (
                 <button className="button-primary" type="button" onClick={() => setActiveView("documentControl")}>
-                  Gå gjennom dokumenter som trenger kontroll
+                  Gå til Dokumentkontroll
                 </button>
               ) : canOpenSaksrom ? (
                 <button className="button-primary" type="button" onClick={() => setActiveView("caseRoom")}>
                   Åpne Saksrom
                 </button>
               ) : null}
-              {needsReview && canOpenSaksrom ? (
-                <button className="button-secondary" type="button" onClick={() => setActiveView("caseRoom")}>
-                  Åpne Saksrom
-                </button>
-              ) : null}
-              <button className="button-secondary" type="button" onClick={() => setShowImportQueueDetails((current) => !current)}>
-                {showImportQueueDetails ? "Skjul tekniske detaljer" : "Vis tekniske detaljer"}
-              </button>
             </div>
           </div>
         ) : null}
@@ -3972,11 +3861,12 @@ const importDocuments = useCallback(
                     <span className={row.canUseInAnswer ? "status-chip status-chip--ok" : "status-chip status-chip--warn"}>
                       {row.label}
                     </span>
+                    <span className="muted">{row.sourceCoveragePercent} %</span>
                   </div>
-                  <p>{row.reason}</p>
                   <details className="technical-disclosure document-basis-row__details">
                     <summary>Vis tekniske detaljer</summary>
                     <div className="case-row__meta">
+                      <span>{row.reason}</span>
                       <span>{countLabel(row.pageCount, "side", "sider")}</span>
                       <span>{row.analyzedPages} analysert</span>
                       <span>{row.pendingOcrPages} venter på tekst</span>
@@ -3984,10 +3874,10 @@ const importDocuments = useCallback(
                       <span>{row.sourceCoveragePercent} % kildeklar</span>
                       <span>Hash {row.hash.slice(0, 12)}</span>
                     </div>
+                    {row.approvedAt ? <small>Kontrollert av {row.approvedBy || "local-user"} {row.approvedAt}</small> : null}
+                    {row.rejectedAt ? <small>Avvist av {row.rejectedBy || "local-user"} {row.rejectedAt}</small> : null}
+                    {approvalSuccessId === row.id ? <small className="document-approval-inline">✓ Kontrollert</small> : null}
                   </details>
-                  {row.approvedAt ? <small>Kontrollert av {row.approvedBy || "local-user"} {row.approvedAt}</small> : null}
-                  {row.rejectedAt ? <small>Avvist av {row.rejectedBy || "local-user"} {row.rejectedAt}</small> : null}
-                  {approvalSuccessId === row.id ? <small className="document-approval-inline">✓ Kontrollert</small> : null}
                 </div>
                 <aside className={mode === "review" ? "control-document-actions" : "document-basis-row__actions"}>
                   <button className="button-secondary" type="button" onClick={() => void handlePreviewDocument(row)} disabled={!row.canPreview}>
@@ -4159,7 +4049,7 @@ const importDocuments = useCallback(
             <h3>Dokumentkontroll er fullført</h3>
             <p>
               {documentBasis.readyCount} dokumenter er klare for Saksrom. {pendingOcrPages > 0
-                ? `${pendingOcrPages} sider gjores sokbare automatisk og brukes ikke som AI-kilder for de er klare. Saksrom kan brukes forelopig med ${Math.round(caseScopedSourceCoveragePercent)} % kildedekning.`
+                ? `${pendingOcrPages} sider hentes automatisk i bakgrunnen — du trenger ikke gjøre noe. Saksrom kan brukes nå med ${Math.round(caseScopedSourceCoveragePercent)} % kildedekning.`
                 : "Kildedekningen er fullført for dokumentene som kan brukes som AI-kilder."}
             </p>
             <div className="panel-actions">
@@ -4684,7 +4574,7 @@ const importDocuments = useCallback(
               readiness={caseReadiness}
               preliminaryBanner={preliminarySaksromBanner}
               nextActionTitle={nextAction.title}
-              suppressProgressActions={showImportCompletion}
+              suppressProgressActions={false}
               systemStatus={{
                 totalDocuments: importProgress.totalDocuments || documentBasis.totalCount,
                 readyDocuments: documentBasis.readyCount,
@@ -4835,7 +4725,6 @@ const importDocuments = useCallback(
   const isCaseRoomView = activeView === "caseRoom";
   const showNavigation = isWorkspaceUnlocked;
   const hasOpenModal =
-    showImportCompletion ||
     casePickerOpen ||
     settingsOpen ||
     commandPaletteOpen ||
@@ -4890,43 +4779,15 @@ const importDocuments = useCallback(
             hasSources={hasSources}
             pendingOcrPages={pendingOcrPages}
             deviations={deviations}
+            theme={theme}
+            visualMode={visualMode}
+            onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            onOpenCommandPalette={() => setCommandPaletteOpen(true)}
+            onSetVisualMode={setVisualMode}
             onOpenCaseSwitcher={() => setCasePickerOpen(true)}
             onNewCase={() => void handleCreateCase()}
             onOpenSettings={() => setSettingsOpen(true)}
           />
-        ) : null}
-        {showNavigation && !isCaseRoomView && activeView !== "documents" ? (
-          <header className="topbar">
-            <div>
-              <div className="topbar-labels">
-                <span className="evaluation-pill">PRE-ALPHA · testdata only</span>
-                <span className="local-pill">Sikker lokalmodus</span>
-              </div>
-              <h1>{viewTitles[activeView]}</h1>
-            </div>
-            <div className="topbar-actions">
-              <button
-                className="theme-toggle"
-                onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-                aria-label={theme === "dark" ? "Bytt til lys modus" : "Bytt til mørk modus"}
-                title={theme === "dark" ? "Lys modus" : "Mørk modus"}
-              >
-                {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-                <span>{theme === "dark" ? "Lys" : "Mørk"}</span>
-              </button>
-              <button className="command-button button-secondary" onClick={() => setCommandPaletteOpen(true)}>
-                Ctrl + K · Sakspilot
-              </button>
-              <label className="visual-mode-switcher">
-                <span>Visuell modus</span>
-                <select value={visualMode} onChange={(event) => setVisualMode(event.target.value as VisualMode)}>
-                  <option value="calm">Calm</option>
-                  <option value="standard">Standard</option>
-                  <option value="focusPlus">Focus+</option>
-                </select>
-              </label>
-            </div>
-          </header>
         ) : null}
 
 
@@ -4979,7 +4840,6 @@ const importDocuments = useCallback(
           {approvalToast}
         </div>
       ) : null}
-      <ImportCompletionModal />
       <CaseSwitcher
         open={casePickerOpen && showNavigation}
         cases={cases}
