@@ -1,0 +1,14 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "name":  "manual_review",
+    "blocker":  "Manual review flow has not been captured on the release desktop build.",
+    "required_evidence":  [
+                              "open imported package",
+                              "inspect sources",
+                              "review warnings",
+                              "confirm no unsupported AI claims"
+                          ],
+    "real_client_data_allowed":  false
+}

@@ -1,8 +1,18 @@
 import type { DocumentBasisRow } from "../documents/documentBasis";
 import type { DocumentControlBulkPlan } from "./documentControl.types";
 
+export const PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED = false;
+export const DOCUMENT_REPLACE_DISABLED_REASON =
+  "Erstatt fil er deaktivert til versjonert erstatning med supersede er produksjonsklar.";
+
 export function canBulkMarkControlled(row: DocumentBasisRow) {
-  return row.canApprove && row.state !== "needs_user_action" && row.state !== "rejected";
+  return (
+    row.canApprove &&
+    row.pendingOcrPages <= 0 &&
+    row.state !== "processing" &&
+    row.state !== "needs_user_action" &&
+    row.state !== "rejected"
+  );
 }
 
 export function deriveDocumentControlBulkPlan(selectedRows: DocumentBasisRow[]): DocumentControlBulkPlan {
@@ -41,9 +51,9 @@ export function deriveDocumentControlBulkPlan(selectedRows: DocumentBasisRow[]):
       },
       {
         id: "run_ocr",
-        label: "Kjør OCR for valgte",
-        description: "Legger dokumenter med manglende tekst i OCR-kø.",
-        enabled: ocrRows.length > 0,
+        label: "OCR kjores automatisk",
+        description: "OCR er en del av importmotoren og krever ikke manuell dokumentkontroll.",
+        enabled: false,
         requiresConfirmation: false
       },
       {
@@ -56,8 +66,10 @@ export function deriveDocumentControlBulkPlan(selectedRows: DocumentBasisRow[]):
       {
         id: "replace",
         label: "Erstatt fil",
-        description: "Velg en lesbar kopi for første valgte dokument som krever erstatning.",
-        enabled: replaceRows.length > 0,
+        description: PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED
+          ? "Velg en lesbar kopi for første valgte dokument som krever erstatning."
+          : DOCUMENT_REPLACE_DISABLED_REASON,
+        enabled: PRODUCTION_GRADE_DOCUMENT_REPLACE_ENABLED && replaceRows.length > 0,
         requiresConfirmation: false
       }
     ]

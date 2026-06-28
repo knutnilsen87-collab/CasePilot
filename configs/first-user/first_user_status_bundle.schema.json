@@ -7,6 +7,7 @@
     "bundle_version",
     "release_candidate_id",
     "commit_sha",
+    "quality_policy",
     "current_state",
     "scope_lock",
     "invariant_layer",
@@ -26,6 +27,61 @@
     },
     "commit_sha": {
       "type": "string"
+    },
+    "quality_policy": {
+      "type": "object",
+      "required": [
+        "quality_bar",
+        "minimum_viable_mode",
+        "partial_allowed_for_client_data",
+        "fallback_policy",
+        "closure_rule"
+      ],
+      "properties": {
+        "quality_bar": {
+          "const": "production_ready_only"
+        },
+        "minimum_viable_mode": {
+          "const": false
+        },
+        "partial_allowed_for_client_data": {
+          "const": false
+        },
+        "fallback_policy": {
+          "const": "block_or_disable_not_workaround"
+        },
+        "closure_rule": {
+          "type": "object",
+          "required": [
+            "pass_requires_all_p0",
+            "partial_counts_as_blocked",
+            "skipped_counts_as_blocked",
+            "unknown_counts_as_blocked",
+            "manual_approval_required",
+            "status_bundle_update_required"
+          ],
+          "properties": {
+            "pass_requires_all_p0": {
+              "const": true
+            },
+            "partial_counts_as_blocked": {
+              "const": true
+            },
+            "skipped_counts_as_blocked": {
+              "const": true
+            },
+            "unknown_counts_as_blocked": {
+              "const": true
+            },
+            "manual_approval_required": {
+              "const": true
+            },
+            "status_bundle_update_required": {
+              "const": true
+            }
+          }
+        }
+      }
     },
     "current_state": {
       "type": "object",

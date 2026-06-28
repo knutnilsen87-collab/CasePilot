@@ -1,4 +1,4 @@
-import { Moon, Settings, Sun } from "lucide-react";
+import { Settings } from "lucide-react";
 import type { CaseSummary } from "../types";
 
 type VisualMode = "calm" | "standard" | "focusPlus";
@@ -10,9 +10,7 @@ type Props = {
   hasSources: boolean;
   pendingOcrPages: number;
   deviations: string[];
-  theme: "dark" | "light";
   visualMode: VisualMode;
-  onToggleTheme: () => void;
   onOpenCommandPalette: () => void;
   onSetVisualMode: (mode: VisualMode) => void;
   onOpenCaseSwitcher: () => void;
@@ -40,9 +38,7 @@ export function CaseHeader({
   hasSources,
   pendingOcrPages,
   deviations,
-  theme,
   visualMode,
-  onToggleTheme,
   onOpenCommandPalette,
   onSetVisualMode,
   onOpenCaseSwitcher,
@@ -60,15 +56,6 @@ export function CaseHeader({
         <span className="case-header__subtitle">{readiness.message}</span>
       </div>
       <div className="case-header__actions">
-        <button
-          className="theme-toggle"
-          onClick={onToggleTheme}
-          aria-label={theme === "dark" ? "Bytt til lys modus" : "Bytt til mørk modus"}
-          title={theme === "dark" ? "Lys modus" : "Mørk modus"}
-        >
-          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-          <span>{theme === "dark" ? "Lys" : "Mørk"}</span>
-        </button>
         <button className="command-button button-secondary" onClick={onOpenCommandPalette}>
           Ctrl + K · Sakspilot
         </button>

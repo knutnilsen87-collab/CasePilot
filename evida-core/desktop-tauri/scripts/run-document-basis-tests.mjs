@@ -1,4 +1,4 @@
-import assert from "node:assert/strict";
+﻿import assert from "node:assert/strict";
 import { Buffer } from "node:buffer";
 import { readFile } from "node:fs/promises";
 import ts from "typescript";
@@ -12,7 +12,7 @@ const transpiled = ts.transpileModule(source, {
   }
 });
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(transpiled.outputText).toString("base64")}`;
-const { deriveDocumentBasisSummary, canUseDocumentInAnswer } = await import(moduleUrl);
+const { deriveDocumentBasisSummary, canUseDocumentInAnswer, isRawTechnicalImportMessage, safeDocumentStatusMessage } = await import(moduleUrl);
 
 function document(patch) {
   return {
@@ -63,36 +63,18 @@ const summary = deriveDocumentBasisSummary({
       updated_at: "2026-05-12T10:00:00Z"
     }
   ],
-  manualReviewItems: [
-    {
-      id: "REV-1",
-      case_id: "CASE-1",
-      import_session_id: "IMPSESSION-1",
-      import_item_id: "IMP-ocr",
-      document_id: "DOC-ocr",
-      page_id: "PAGE-1",
-      review_type: "ocr_required",
-      severity: "warning",
-      status: "open",
-      reason: "Siden mangler tekst.",
-      recommended_action: "Forhåndsvis og godkjenn.",
-      ai_usable: false,
-      created_at: "2026-05-12T10:00:00Z",
-      updated_at: "2026-05-12T10:00:00Z"
-    }
-  ],
+  manualReviewItems: [],
   audit: [],
   hasActiveProcessing: false
 });
 
 assert.equal(summary.readyDocuments.length, 1, "ready documents are grouped");
-assert.equal(summary.needsReviewDocuments.length, 1, "OCR/manual review documents are grouped");
+assert.equal(summary.needsReviewDocuments.length, 0, "OCR queue documents are not grouped as manual review");
 assert.equal(summary.unreadableDocuments.length, 1, "unreadable documents are grouped");
-assert.equal(summary.needsReviewDocuments[0].label, "Trenger OCR eller tekstkontroll");
 assert.equal(summary.unreadableDocuments[0].recommendedAction, "Last opp en ny kopi.");
-assert.equal(summary.etaLabel, "2 dokumenter trenger kontroll");
+assert.equal(summary.etaLabel, "2 dokumenter behandles eller trenger oppmerksomhet");
 assert.equal(canUseDocumentInAnswer(summary.readyDocuments[0]), true);
-assert.equal(canUseDocumentInAnswer(summary.needsReviewDocuments[0]), false);
+assert.equal(canUseDocumentInAnswer(summary.rows.find((row) => row.id === "DOC-ocr")), false);
 assert.equal(canUseDocumentInAnswer(summary.unreadableDocuments[0]), false);
 
 const approved = deriveDocumentBasisSummary({
@@ -140,4 +122,52 @@ assert.equal(approvedWithoutText.needsReviewDocuments.length, 0, "manual approva
 assert.equal(approvedWithoutText.readyDocuments[0].label, "Kontrollert", "no-text approval is labeled as controlled");
 assert.equal(canUseDocumentInAnswer(approvedWithoutText.readyDocuments[0]), false, "no-text approval does not create an AI-citable source");
 
+const rawSqlSummary = deriveDocumentBasisSummary({
+  documents: [document({ id: "DOC-sql", ocr_status: "failed", source_count: 0, source_coverage_percent: 0 })],
+  importItems: [
+    {
+      id: "IMP-sql",
+      import_session_id: "IMPSESSION-1",
+      case_id: "CASE-1",
+      original_path: "F:/case/DOC-sql.pdf",
+      original_name: "DOC-sql.pdf",
+      sha256: "DOC-sql-hash-1234567890",
+      status: "failed",
+      issue_code: "UNKNOWN_ERROR",
+      issue_severity: "error",
+      user_message: "no such column: lifecycle_status at offset 87 CREATE INDEX IF NOT EXISTS",
+      technical_message: "no such column: lifecycle_status at offset 87 CREATE INDEX IF NOT EXISTS",
+      recommended_action: "Send raw SQL to support",
+      can_retry: false,
+      can_continue: false,
+      file_size: 100,
+      page_count: 10,
+      pages_with_text: 0,
+      pages_requires_ocr: 0,
+      source_count: 0,
+      created_at: "2026-05-12T10:00:00Z",
+      updated_at: "2026-05-12T10:00:00Z"
+    }
+  ],
+  manualReviewItems: [],
+  audit: [],
+  hasActiveProcessing: false
+});
+
+assert.equal(isRawTechnicalImportMessage("no such column: lifecycle_status"), true, "raw SQL errors are detected");
+assert.equal(safeDocumentStatusMessage("CREATE INDEX IF NOT EXISTS idx_doc"), "Teknisk feil under import", "raw SQL is mapped to safe copy");
+assert.equal(rawSqlSummary.unreadableDocuments[0].reason, "Teknisk feil under import", "document rows hide raw SQL by default");
+assert.equal(
+  rawSqlSummary.unreadableDocuments[0].recommendedAction,
+  "Detaljer er skjult. Åpne tekniske detaljer ved behov.",
+  "document rows explain where technical details live"
+);
+assert.equal(
+  /lifecycle_status|CREATE INDEX|offset 87/.test(rawSqlSummary.unreadableDocuments[0].reason),
+  false,
+  "default row reason contains no internal database text"
+);
+
 console.log("document basis tests passed.");
+
+

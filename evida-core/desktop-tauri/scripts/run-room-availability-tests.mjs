@@ -14,7 +14,8 @@ const transpiled = ts.transpileModule(source, {
 });
 
 const moduleUrl = `data:text/javascript;base64,${Buffer.from(transpiled.outputText).toString("base64")}`;
-const { EXPORT_PRELIMINARY_ACKNOWLEDGEMENT, getRoomAvailability, roomKeyForView } = await import(moduleUrl);
+const { EXPORT_PRELIMINARY_ACKNOWLEDGEMENT, getRoomAvailability, getSidebarStateLabel, roomKeyForView } = await import(moduleUrl);
+const sidebarSource = await readFile(new URL("../src/components/Sidebar.tsx", import.meta.url), "utf8");
 
 const baseSummary = {
   importInProgress: false,
@@ -31,6 +32,7 @@ for (const room of ["saksrom", "chronology", "evidence", "arguments", "risk", "s
   assert.equal(availability.enabled, true, `${room} opens with sources even below 100% coverage`);
   assert.equal(availability.mode, "preliminary", `${room} is preliminary below full coverage`);
   assert.ok(availability.warning.includes("96 % kildedekning"), `${room} explains coverage`);
+  assert.equal(getSidebarStateLabel(availability), "Foreløpig", `${room} sidebar avoids repeated OCR alarm badges`);
 }
 
 assert.equal(
@@ -50,7 +52,7 @@ assert.equal(
 );
 assert.equal(
   getRoomAvailability("saksrom", { ...baseSummary, documentControlComplete: false }).label,
-  "Krever dokumentkontroll",
+  "Kontroll kreves",
   "manual document control is separate from coverage"
 );
 assert.equal(
@@ -65,5 +67,6 @@ assert.equal(
 );
 assert.equal(roomKeyForView("caseRoom"), "saksrom", "caseRoom maps to Saksrom");
 assert.equal(roomKeyForView("litigationSimulation"), "simulation", "litigation simulation maps to simulation room");
+assert.ok(!sidebarSource.includes("sidebar-item__helper"), "sidebar stays navigation-first without repeated helper text under every item");
 
 console.log("room availability tests passed.");

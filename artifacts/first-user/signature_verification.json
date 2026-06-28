@@ -1,0 +1,45 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9410535Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "release_dir":  "F:\\prosjekter(MAIN)\\EVIDA\\Evida Release",
+    "signatures":  [
+                       {
+                           "file":  "Evida.exe",
+                           "exists":  true,
+                           "status":  "NotSigned",
+                           "signer":  null,
+                           "timestamp":  null
+                       },
+                       {
+                           "file":  "Evida installer.exe",
+                           "exists":  true,
+                           "status":  "NotSigned",
+                           "signer":  null,
+                           "timestamp":  null
+                       },
+                       {
+                           "file":  "Evida installer.msi",
+                           "exists":  true,
+                           "status":  "NotSigned",
+                           "signer":  null,
+                           "timestamp":  null
+                       },
+                       {
+                           "file":  "Evida_0.1.0_x64-setup.exe",
+                           "exists":  true,
+                           "status":  "NotSigned",
+                           "signer":  null,
+                           "timestamp":  null
+                       },
+                       {
+                           "file":  "Evida_0.1.0_x64_en-US.msi",
+                           "exists":  true,
+                           "status":  "NotSigned",
+                           "signer":  null,
+                           "timestamp":  null
+                       }
+                   ],
+    "required_for_client_data":  "All distributable executables/installers must have a valid publisher signature before real client data.",
+    "blocker":  "One or more release binaries are missing or not Authenticode Valid."
+}

@@ -8,7 +8,6 @@ type Props = {
   onImportFolder?: () => void;
   onExport: () => void;
   onCloseCase: () => void;
-  onToggleTheme: () => void;
   onOpenCommandPalette: () => void;
   onOpenSettings: () => void;
   onOpenDataFolder: () => void;
@@ -32,7 +31,6 @@ export function DesktopMenuBar({
   onImportFolder,
   onExport,
   onCloseCase,
-  onToggleTheme,
   onOpenCommandPalette,
   onOpenSettings,
   onOpenDataFolder
@@ -98,7 +96,6 @@ export function DesktopMenuBar({
       id: "view",
       label: "Vis",
       items: [
-        { label: "Lys/mørk modus", action: onToggleTheme },
         { label: "Sakspilot", shortcut: "Ctrl+K", action: onOpenCommandPalette }
       ]
     },

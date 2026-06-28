@@ -1,0 +1,8 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "partial",
+    "verdict":  "blocked",
+    "source_coverage_snapshot_present":  "referenced by first-user evidence where available",
+    "release_snapshot_current":  false,
+    "blocker":  "Retrieval/source coverage snapshot must be regenerated from the release build and documented."
+}

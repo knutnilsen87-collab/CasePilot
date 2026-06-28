@@ -220,7 +220,6 @@ export function getCaseReadiness(input: ReadinessInput): ReadinessResult {
 
   if (
     sourceCoveragePercent < 80 ||
-    input.pendingTextRecognitionPages > 0 ||
     input.documentsRequiringAttention > 0 ||
     input.importFailures > 0 ||
     input.failedDocuments > 0 ||
@@ -237,6 +236,22 @@ export function getCaseReadiness(input: ReadinessInput): ReadinessResult {
         "Ikke bruk til utkast, konklusjon, simulert dom eller endelig vurdering.",
       primaryAction: "Se hva som mangler",
       severity: "warning",
+      sourceCoveragePercent,
+      testDataWarning
+    };
+  }
+
+  if (input.pendingTextRecognitionPages > 0) {
+    return {
+      verdict: "ready_for_preliminary_analysis",
+      label: "Klar mens OCR pågår",
+      title: "Saksrom er klart foreløpig",
+      reason: "Evida gjør skannede sider søkbare automatisk. Saksrom bruker bare sidene som allerede har sporbare kilder.",
+      allowedUse:
+        "Kan brukes til Saksrom, kronologi, bevisoversikt og foreløpig analyse med tydelig forbehold.",
+      blockedUse: "Ikke bruk til endelig innsending uten kvalitetssikring.",
+      primaryAction: "Åpne Saksrom",
+      severity: "success",
       sourceCoveragePercent,
       testDataWarning
     };

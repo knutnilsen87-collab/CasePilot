@@ -8,6 +8,8 @@ interface DocumentPreviewDrawerProps {
   isOpen: boolean;
   approvalState?: "idle" | "saving" | "approved";
   attentionRemaining?: number;
+  replaceEnabled?: boolean;
+  replaceDisabledReason?: string;
   onClose: () => void;
   onApproveAsSource: (documentId: string) => void;
   onExcludeFromCase: (documentId: string) => void;
@@ -61,6 +63,8 @@ export function DocumentPreviewDrawer({
   isOpen,
   approvalState = "idle",
   attentionRemaining,
+  replaceEnabled = true,
+  replaceDisabledReason,
   onClose,
   onApproveAsSource,
   onExcludeFromCase,
@@ -92,6 +96,8 @@ export function DocumentPreviewDrawer({
   const hasUsableSources = document.source_count > 0;
   const approveLabel = hasUsableSources ? "Godkjenn som kilde" : "Kontrollert, men ikke siterbar";
   const canOpenOriginalFolder = Boolean(document.local_path);
+  const replaceDisabledNoteId = `document-preview-replace-disabled-${document.id}`;
+  const showReplaceDisabledNote = !replaceEnabled;
   const shouldShowTextPreview = kind === "text" || kind === "docx_text" || kind === "unsupported" || (kind === "pdf" && !previewUrl);
   const shouldShowPreviewFallback = !previewUrl || previewFailed;
 
@@ -203,9 +209,25 @@ export function DocumentPreviewDrawer({
           <button className="button-secondary" type="button" disabled={approvalState === "saving"} onClick={() => onExcludeFromCase(document.id)}>
             Hold utenfor kildegrunnlaget
           </button>
-          <button className="button-secondary" type="button" disabled={approvalState === "saving"} onClick={() => onReplaceFile(document.id)}>
+          <button
+            className="button-secondary"
+            type="button"
+            disabled={approvalState === "saving" || !replaceEnabled}
+            title={!replaceEnabled ? replaceDisabledReason : undefined}
+            aria-describedby={showReplaceDisabledNote ? replaceDisabledNoteId : undefined}
+            onClick={() => onReplaceFile(document.id)}
+          >
             Erstatt fil
           </button>
+          {showReplaceDisabledNote ? (
+            <p id={replaceDisabledNoteId} className="replace-disabled-note replace-disabled-note--drawer" role="note">
+              <strong>Erstatt fil er blokkert for denne testutgaven.</strong>
+              <span>
+                {replaceDisabledReason ||
+                  "Versjonert erstatning med supersede må være produksjonsklar før denne handlingen kan brukes."}
+              </span>
+            </p>
+          ) : null}
           {canOpenOriginalFolder ? (
             <button className="button-secondary" type="button" onClick={() => onOpenOriginalFolder(document.local_path)}>
               Åpne originalmappe

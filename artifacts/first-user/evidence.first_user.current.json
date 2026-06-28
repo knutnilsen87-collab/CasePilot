@@ -1,9 +1,9 @@
 {
     "artifact":  "evidence.first_user.current",
     "generated_at":  "2026-05-13T11:38:36Z",
-    "updated_at":  "2026-05-15T14:25:05+02:00",
+    "updated_at":  "2026-05-19T14:32:05+02:00",
     "release_candidate_id":  "evida-0.1.0-alpha-local-2026-05-13",
-    "scope":  "controlled first-user evaluation with synthetic/redacted test data only",
+    "scope":  "controlled first-user evaluation with synthetic/redacted test data only; real client data remains blocked by client-data desktop DoD",
     "verdict":  "blocked",
     "summary":  {
                     "automated_desktop_gates":  "pass",
@@ -14,6 +14,11 @@
                     "signed_sbom_and_ci_security_scan":  "blocked",
                     "clean_machine_smoke":  "blocked_manual_required",
                     "human_approval":  "blocked_manual_required",
+                    "real_client_data_allowed":  false,
+                    "managed_windows_braathe_jussys":  "blocked",
+                    "runtime_sensitive_log_scan":  "blocked",
+                    "client_data_desktop_dod":  "blocked",
+                    "production_dod_status":  "blocked_release_artifacts_failed",
                     "backend_tests_status":  "pass",
                     "control_plane_maven_tests":  "pass",
                     "secret_scan_status":  "pass",
@@ -74,7 +79,42 @@
                               "kind":  "artifact",
                               "ref":  "artifacts/production-dod/evida-production-dod-report.json",
                               "result":  "BLOCKED",
-                              "notes":  "Fail-closed aggregate DoD report. Blocks on first-user approval, clean-machine smoke, Windows code signing, and signed SBOM/CI SCA/SAST."
+                              "notes":  "Fail-closed aggregate DoD report. Latest run has release-artifacts PASS, desktop hardening PASS, backend/control-plane PASS, and remains BLOCKED on first-user approval, clean-machine smoke, Windows code signing, signed SBOM/CI SCA/SAST, and client-data desktop DoD gaps."
+                          },
+                          {
+                              "id":  "EV-CLIENT-DATA-DOD-CONTRACT",
+                              "kind":  "docs",
+                              "ref":  "docs/first-user/CLIENT_DATA_DESKTOP_DOD.md",
+                              "result":  "BLOCKED",
+                              "notes":  "Client-data desktop DoD contract installed. It explicitly keeps real_client_data_allowed=false until all P0 client-data gates pass."
+                          },
+                          {
+                              "id":  "EV-CLIENT-DATA-DOD-DIAGNOSTICS",
+                              "kind":  "command",
+                              "ref":  "powershell -NoProfile -ExecutionPolicy Bypass -File ops/Test-EvidaClientDataDesktopDoD.ps1",
+                              "result":  "BLOCKED",
+                              "notes":  "Generated machine-readable client-data desktop DoD phase artifacts. Phase 0 pass; Phases 1-11 blocked by signing, managed workstation, marker-flow, audit/export/security, and approval requirements."
+                          },
+                          {
+                              "id":  "EV-WINDOWS-POLICY-DIAGNOSTICS",
+                              "kind":  "artifact",
+                              "ref":  "artifacts/first-user/windows_policy_diagnostics.current.json",
+                              "result":  "BLOCKED",
+                              "notes":  "Release manifest/signing/managed policy evidence is not sufficient for real client data."
+                          },
+                          {
+                              "id":  "EV-RUNTIME-MARKER-LOG-SCAN",
+                              "kind":  "artifact",
+                              "ref":  "artifacts/first-user/runtime_sensitive_log_scan.json",
+                              "result":  "BLOCKED",
+                              "notes":  "No marker leaks found in scanned runtime artifacts, but the required synthetic marker import flow has not been run."
+                          },
+                          {
+                              "id":  "EV-CLIENT-DATA-APPROVALS",
+                              "kind":  "artifact",
+                              "ref":  "artifacts/first-user/*_approval.json",
+                              "result":  "BLOCKED",
+                              "notes":  "Approval artifacts are present as missing/blocked placeholders only; no approval is claimed."
                           }
                       ],
     "first_user_pack":  {
@@ -84,6 +124,21 @@
                             "file_count":  24,
                             "integrity":  "pass"
                         },
+    "client_data_desktop_dod":  {
+                                    "status":  "blocked",
+                                    "result_ref":  "artifacts/first-user/client_data_desktop_dod_result.json",
+                                    "generated_artifacts":  [
+                                                                "artifacts/first-user/client_data_desktop_dod_result.json",
+                                                                "artifacts/first-user/windows_policy_diagnostics.current.json",
+                                                                "artifacts/first-user/signature_verification.json",
+                                                                "artifacts/first-user/runtime_sensitive_log_scan.json",
+                                                                "artifacts/first-user/raw_storage_inspection.json",
+                                                                "artifacts/first-user/encryption_verification.json",
+                                                                "artifacts/first-user/audit_coverage_result.json",
+                                                                "artifacts/first-user/export_smoke_result.json"
+                                                            ],
+                                    "real_client_data_allowed":  false
+                                },
     "manual_gates_remaining":  [
                                    "Run clean-machine smoke on a separate Windows profile or machine.",
                                    "Generate signed SBOM and SCA/SAST report with no release-blocking findings.",
@@ -152,7 +207,7 @@
                                    "backend_tests":  {
                                                          "gate":  "backend-tests",
                                                          "status":  "PASS",
-                                                         "service":  "F:\\prosjekter(MAIN)\\CasePilot\\evida-core\\services\\saksrom-api",
+                                                         "service":  "F:\\prosjekter(MAIN)\\EVIDA\\evida-core\\services\\saksrom-api",
                                                          "command":  "C:\\Users\\knutn\\.evida-tools\\apache-maven-3.9.11\\bin\\mvn.cmd",
                                                          "exit_code":  0,
                                                          "message":  "Backend Maven tests passed."
@@ -161,7 +216,7 @@
                                                        "gate":  "secret-scan",
                                                        "status":  "PASS",
                                                        "command":  "C:\\Users\\knutn\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gitleaks.Gitleaks_Microsoft.Winget.Source_8wekyb3d8bbwe\\gitleaks.exe",
-                                                       "report":  "F:\\prosjekter(MAIN)\\CasePilot\\artifacts\\security\\gitleaks-report.json",
+                                                       "report":  "F:\\prosjekter(MAIN)\\EVIDA\\artifacts\\security\\gitleaks-report.json",
                                                        "exit_code":  0,
                                                        "findings":  0,
                                                        "scopes":  [

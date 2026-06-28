@@ -1,0 +1,212 @@
+TXT TESTDOKUMENT - Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak
+
+Dokument-ID: TXT-309
+
+Dette dokumentet er fiktivt og skal kunne trekkes ut som tekstkilde.
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-001: 98 250 NOK ble overført fra LT77 7044 0012 8891 0081 til DE52 3704 0044 0532 0130 00. Meldingsfelt: "deloppgjør".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Henrik Falk
+Til: Oskar Lie
+Emne: Revisjonsspørsmål
+Utdrag: "Avstem før bankfil sendes."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-01 gjelder faktura fra Polar Ledger GmbH. Bokført
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-002: 124 800 NOK ble overført fra DE52 3704 0044 0532 0130 00 til DE52 3704 0044 0532 0130 00. Meldingsfelt: "deloppgjør".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Maja Solheim
+Til: Oskar Lie
+Emne: Prosjekt Midnatt
+Utdrag: "Ikke bruk samme tekst som forrige uke."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-02 gjelder faktura fra FjordPay P
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-003: 1 248 000 NOK ble overført fra LT77 7044 0012 8891 0081 til NO45 1503 22 99881. Meldingsfelt: "kundeavregning".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Elin Moen
+Til: Henrik Falk
+Emne: Prosjekt Midnatt
+Utdrag: "Legg ved kun sammendraget i første omgang."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-03 gjelder faktura fra Aurora Capita
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-004: 248 000 NOK ble overført fra LT77 7044 0012 8891 0081 til NO45 1503 22 99881. Meldingsfelt: "deloppgjør".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Maja Solheim
+Til: Oskar Lie
+Emne: Betalingsbatch
+Utdrag: "Legg ved kun sammendraget i første omgang."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-04 gjelder faktura fra Skagen Consulting AS
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-005: 99 700 NOK ble overført fra LT77 7044 0012 8891 0081 til DE52 3704 0044 0532 0130 00. Meldingsfelt: "konsulentbistand".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Elin Moen
+Til: Maja Solheim
+Emne: Kontroll av leverandør
+Utdrag: "Legg ved kun sammendraget i første omgang."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-05 gjelder faktura fr
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-006: 124 800 NOK ble overført fra LT77 7044 0012 8891 0081 til LT77 7044 0012 8891 0081. Meldingsfelt: "AUR-oppgjør".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Jonas Berg
+Til: Henrik Falk
+Emne: Revisjonsspørsmål
+Utdrag: "Legg ved kun sammendraget i første omgang."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-06 gjelder faktura fra Vika Nomin
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-007: 99 700 NOK ble overført fra LT77 7044 0012 8891 0081 til DE52 3704 0044 0532 0130 00. Meldingsfelt: "AUR-oppgjør".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Oskar Lie
+Til: Oskar Lie
+Emne: Betalingsbatch
+Utdrag: "Legg ved kun sammendraget i første omgang."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-07 gjelder faktura fra Polar Ledger G
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-008: 2 480 000 NOK ble overført fra EE38 2200 2210 2014 5588 til LT77 7044 0012 8891 0081. Meldingsfelt: "deloppgjør".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Sara Vestrum
+Til: Maja Solheim
+Emne: Kontroll av leverandør
+Utdrag: "Legg ved kun sammendraget i første omgang."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-08 gjelder faktura fra P
+
+Sammendrag:
+Denne siden gjelder Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak. Materialet er fiktivt og laget for praktisk systemtest av import, kildeutdrag, OCR, Dokumentkontroll og Saksrom.
+
+
+Transaksjonsanalyse:
+Transaksjon TX-AUR-309-009: 248 000 NOK ble overført fra LT77 7044 0012 8891 0081 til EE38 2200 2210 2014 5588. Meldingsfelt: "konsulentbistand".
+Beløpet inngår i en serie betalinger samme dato. Flere transaksjoner ligger like under intern varslingsgrense.
+Foreløpig vurdering: Mønsteret kan være forenlig med layering, men krever kontroll mot underliggende avtaler og fakturaer.
+
+
+
+E-postkorrespondanse:
+Fra: Jonas Berg
+Til: Henrik Falk
+Emne: Prosjekt Midnatt
+Utdrag: "Dette må ikke blandes med ordinær drift."
+Vurdering: Meldingen må sammenholdes med transaksjonslogg og regnskapsbilag før konklusjon.
+
+
+
+Regnskapsutdrag:
+Bilag BIL-0309-09 gjelder faktura fra Polar Le

@@ -1,0 +1,8 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "partial",
+    "verdict":  "blocked",
+    "existing_invariant_reference":  "INV-AI-004 is currently pass in first-user invariant evaluation",
+    "release_client_data_eval_verified":  false,
+    "blocker":  "Prompt injection behavior still needs release-client-data evaluation evidence."
+}

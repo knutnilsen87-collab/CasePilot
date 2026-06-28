@@ -1,0 +1,15 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "name":  "audit_coverage",
+    "blocker":  "Client-data audit coverage is not complete across import, AI answer, export, delete, and policy changes.",
+    "required_evidence":  [
+                              "import audit",
+                              "AI answer audit",
+                              "export audit",
+                              "delete audit",
+                              "provider policy audit"
+                          ],
+    "real_client_data_allowed":  false
+}

@@ -1,0 +1,20 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "scanned_files":  [
+                          "evida-core\\desktop-tauri\\vite-smoke.err.log",
+                          "evida-core\\desktop-tauri\\vite-smoke.out.log",
+                          "artifacts\\production-dod\\evida-production-dod-report.json",
+                          "artifacts\\security\\evida-security-evidence.json",
+                          "artifacts\\security\\gitleaks-report.json",
+                          "artifacts\\security\\npm-audit.json",
+                          "artifacts\\security\\cargo-tree.txt",
+                          "artifacts\\security\\maven-dependency-tree.txt"
+                      ],
+    "marker_leaks_found":  [
+
+                           ],
+    "marker_flow_executed":  false,
+    "blocker":  "No leaks found in scanned runtime artifacts, but the required synthetic marker import flow has not been executed."
+}

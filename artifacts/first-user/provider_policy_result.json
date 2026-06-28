@@ -1,0 +1,9 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "partial",
+    "verdict":  "blocked",
+    "external_ai_default_off":  "referenced by first-user invariants",
+    "client_data_provider_allowlist_verified":  false,
+    "blocker":  "Provider routing is not yet approved for real client data.",
+    "real_client_data_allowed":  false
+}

@@ -1,0 +1,197 @@
+{
+  "pack_name": "Evida Aurora Tailored Practical Import UX Stress Pack",
+  "case_id": "AUR-2026-0511",
+  "case_title": "Aurora Capital Nettverk - fiktiv ØKOKRIM-lignende økonomisak",
+  "built_for": "CasePilot/Evida developer docs: import outcome, Dokumentkontroll, Saksrom limited source foundation, encoding and overflow testing",
+  "do_not_upload": [
+    "00_ANSWERS_DO_NOT_UPLOAD",
+    "README_START_HER.md",
+    "RUN_GUIDE_FOR_EVIDA.md"
+  ],
+  "upload_folders": [
+    "01_MEDIUM_import_fullfort_kontroll_kreves/UPLOAD_THIS_FOLDER",
+    "02_HARD_folder_import_mixed_formats/UPLOAD_THIS_FOLDER",
+    "03_EXTREME_large_real_saksmappe_pdf/UPLOAD_THIS_FOLDER",
+    "04_FAILURE_edge_cases_status_and_recovery/UPLOAD_THIS_FOLDER"
+  ],
+  "scenario_summaries": {
+    "01_MEDIUM": {
+      "files": 38,
+      "logical_pages": 142,
+      "ready_files": 30,
+      "ocr_files": 6,
+      "failed_files": 2,
+      "unsupported_files": 0,
+      "duplicate_files": 0,
+      "gold_ids": [
+        "GOLD-001",
+        "GOLD-002",
+        "GOLD-003",
+        "GOLD-004",
+        "GOLD-005",
+        "GOLD-006",
+        "GOLD-007",
+        "GOLD-008",
+        "GOLD-009"
+      ]
+    },
+    "02_HARD": {
+      "files": 126,
+      "logical_pages": 179,
+      "ready_files": 107,
+      "ocr_files": 14,
+      "failed_files": 2,
+      "unsupported_files": 2,
+      "duplicate_files": 1,
+      "gold_ids": [
+        "GOLD-001",
+        "GOLD-002",
+        "GOLD-005",
+        "GOLD-008",
+        "GOLD-010"
+      ]
+    },
+    "03_EXTREME": {
+      "files": 7,
+      "logical_pages": 1006,
+      "ready_files": 1,
+      "ocr_files": 6,
+      "failed_files": 0,
+      "unsupported_files": 0,
+      "duplicate_files": 0,
+      "gold_ids": [
+        "GOLD-001",
+        "GOLD-002",
+        "GOLD-003",
+        "GOLD-004",
+        "GOLD-005",
+        "GOLD-006",
+        "GOLD-007",
+        "GOLD-008",
+        "GOLD-009"
+      ]
+    },
+    "04_FAILURE": {
+      "files": 8,
+      "logical_pages": 3,
+      "ready_files": 3,
+      "ocr_files": 0,
+      "failed_files": 3,
+      "unsupported_files": 2,
+      "duplicate_files": 0,
+      "gold_ids": []
+    }
+  },
+  "gold_findings": [
+    {
+      "id": "GOLD-001",
+      "title": "Strukturerte overføringer under intern varslingsgrense",
+      "expected_answer": "Flere betalinger ble splittet i beløp like under 100000 NOK og sendt samme dag via ulike konti.",
+      "required_terms": [
+        "TX-AUR-1187",
+        "under rapporteringsgrensen",
+        "splitte betalingene"
+      ]
+    },
+    {
+      "id": "GOLD-002",
+      "title": "E-post viser bevisst skjuling av betalingsmønster",
+      "expected_answer": "Intern e-post fra Henrik Falk ber mottakerne bruke konsulentfakturaer og ikke skrive endelig mottaker i fritekstfelt.",
+      "required_terms": [
+        "ikke skriv endelig mottaker",
+        "konsulentfaktura",
+        "Henrik Falk"
+      ]
+    },
+    {
+      "id": "GOLD-003",
+      "title": "Regnskapsavvik på 12 480 000 NOK",
+      "expected_answer": "Bokført kostnad for Skagen Consulting AS overstiger dokumentert leveranse med 12 480 000 NOK.",
+      "required_terms": [
+        "12 480 000",
+        "Skagen Consulting",
+        "dokumentert leveranse"
+      ]
+    },
+    {
+      "id": "GOLD-004",
+      "title": "Motstrid mellom avhør og banklogg",
+      "expected_answer": "Avhør hevder at Oskar Lie ikke kontrollerte konto EE38, mens bankloggen viser to innlogginger fra hans enhet.",
+      "required_terms": [
+        "Oskar Lie",
+        "EE38",
+        "bankloggen"
+      ]
+    },
+    {
+      "id": "GOLD-005",
+      "title": "VPN/IP-spor peker mot administrativ kontroll",
+      "expected_answer": "Serverloggen viser admin-login fra VPN-endepunkt brukt av Aurora Capital samme kveld som overføringer ble godkjent.",
+      "required_terms": [
+        "VPN-MT-443",
+        "admin-login",
+        "samme kveld"
+      ]
+    },
+    {
+      "id": "GOLD-006",
+      "title": "Vitne forklarer bruk av stråselskaper",
+      "expected_answer": "Tidligere økonomimedarbeider forklarer at ledelsen instruerte om bruk av tre stråselskaper for å skjule reell mottaker.",
+      "required_terms": [
+        "stråselskaper",
+        "tre selskaper",
+        "reell mottaker"
+      ]
+    },
+    {
+      "id": "GOLD-007",
+      "title": "Slettet e-post gjenopprettet fra serverlogg",
+      "expected_answer": "En slettet e-post med emne Prosjekt Midnatt ble gjenopprettet og kobler betalingsbatch til kontantuttak.",
+      "required_terms": [
+        "Prosjekt Midnatt",
+        "gjenopprettet",
+        "kontantuttak"
+      ]
+    },
+    {
+      "id": "GOLD-008",
+      "title": "OCR-only funn i scannet vedlegg",
+      "expected_answer": "Scannet vedlegg inneholder håndskrevet beskjed om å flytte midler før revisjon mandag.",
+      "required_terms": [
+        "før revisjon mandag",
+        "flytt midlene",
+        "OCR"
+      ]
+    },
+    {
+      "id": "GOLD-009",
+      "title": "Manglende vedlegg C i rapportpakke",
+      "expected_answer": "Rapporten refererer til Vedlegg C - kontantuttak, men vedlegget finnes ikke i mappen.",
+      "required_terms": [
+        "Vedlegg C",
+        "kontantuttak",
+        "mangler"
+      ]
+    },
+    {
+      "id": "GOLD-010",
+      "title": "Duplikat/nær-duplikat rapport med endret konklusjon",
+      "expected_answer": "To versjoner av compliance-notatet har nesten lik tekst, men konklusjonen er endret fra høy risiko til moderat risiko.",
+      "required_terms": [
+        "høy risiko",
+        "moderat risiko",
+        "compliance-notat"
+      ]
+    }
+  ],
+  "medium_expected_ui_outcome": {
+    "selected_files": 38,
+    "logical_pages_total": 142,
+    "pages_with_text_before_ocr": 136,
+    "pages_requiring_ocr_before_ocr": 6,
+    "expected_source_coverage_percent_before_ocr": 96,
+    "expected_modal_title": "Import fullført — kontroll kreves",
+    "expected_primary_cta": "Kontroller 8 dokumenter",
+    "expected_safe_saksrom_state": "Foreløpig Saksrom - svar bygger bare på kontrollerte kilder"
+  }
+}

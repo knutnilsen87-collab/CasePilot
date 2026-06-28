@@ -1,4 +1,4 @@
-evida-desktop v0.1.0 (F:\prosjekter(MAIN)\CasePilot\evida-core\desktop-tauri\src-tauri)
+evida-desktop v0.1.0 (F:\prosjekter(MAIN)\EVIDA\evida-core\desktop-tauri\src-tauri)
 ├── aes-gcm v0.10.3
 │   ├── aead v0.5.2
 │   │   ├── crypto-common v0.1.7

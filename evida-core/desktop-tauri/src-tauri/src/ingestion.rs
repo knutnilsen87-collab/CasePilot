@@ -29,6 +29,70 @@ pub struct DocumentExtraction {
     pub warnings: Vec<String>,
 }
 
+pub fn ocr_recovery_state(extraction: &DocumentExtraction) -> &'static str {
+    if extraction.ocr_status == "unsupported_file_type" {
+        return "extraction_failed";
+    }
+    if extraction.ocr_status == "failed" {
+        return "ocr_failed";
+    }
+    if extraction.ocr_status == "ok"
+        && extraction
+            .pages
+            .iter()
+            .any(|page| page.text_status == "ocr_extracted")
+        && !extraction.chunks.is_empty()
+    {
+        return "ocr_succeeded";
+    }
+    if extraction.ocr_status == "needs_ocr"
+        || extraction.ocr_status == "partial_needs_ocr"
+        || extraction.pages.iter().any(|page| page.text_status == "needs_ocr")
+    {
+        return "ocr_queued";
+    }
+    if extraction.chunks.is_empty()
+    {
+        return "manual_review_required";
+    }
+    if ocr_was_attempted(extraction) {
+        return "ocr_attempted";
+    }
+    "manual_review_required"
+}
+
+pub fn ocr_was_attempted(extraction: &DocumentExtraction) -> bool {
+    extraction.ocr_status == "ok"
+        || extraction.ocr_status == "failed"
+        || extraction
+            .warnings
+            .iter()
+            .any(|warning| warning.contains("tesseract"))
+}
+
+pub fn extraction_requires_manual_review(extraction: &DocumentExtraction) -> bool {
+    matches!(
+        extraction.ocr_status.as_str(),
+        "unsupported_file_type" | "failed" | "empty"
+    )
+        || extraction
+            .pages
+            .iter()
+            .any(|page| page.text_status == "failed")
+}
+
+pub fn extraction_is_source_ready(extraction: &DocumentExtraction) -> bool {
+    !extraction.chunks.is_empty()
+        && !matches!(
+            extraction.ocr_status.as_str(),
+            "unsupported_file_type" | "failed" | "needs_ocr" | "partial_needs_ocr" | "empty"
+        )
+        && !extraction
+            .pages
+            .iter()
+            .any(|page| page.text_status == "needs_ocr" || page.text_status == "failed")
+}
+
 pub fn extract_document(path: &Path) -> Result<DocumentExtraction> {
     if !path.exists() {
         anyhow::bail!("Document does not exist: {}", path.display());
@@ -205,14 +269,58 @@ fn docx_pages_and_chunks(
             vec![],
         );
     }
-    (
-        vec![ExtractedPage {
-            page_number: 1,
-            sha256: Some(sha256_text(text)),
+    let page_texts = split_text_into_logical_pages(text, 4000);
+    let mut pages = Vec::new();
+    let mut chunks = Vec::new();
+    for (index, page_text) in page_texts.iter().enumerate() {
+        let page_number = index as i64 + 1;
+        pages.push(ExtractedPage {
+            page_number,
+            sha256: Some(sha256_text(page_text)),
             text_status: "extracted".to_string(),
-        }],
-        split_text_into_chunks(text, 1),
-    )
+        });
+        chunks.extend(split_text_into_chunks(page_text, page_number));
+    }
+    (pages, chunks)
+}
+
+fn split_text_into_logical_pages(text: &str, target_chars_per_page: usize) -> Vec<String> {
+    let normalized = text.split_whitespace().collect::<Vec<_>>().join(" ");
+    if normalized.is_empty() {
+        return vec![];
+    }
+    let target = target_chars_per_page.max(1200);
+    let chars: Vec<char> = normalized.chars().collect();
+    let mut pages = Vec::new();
+    let mut cursor = 0;
+    while cursor < chars.len() {
+        let mut end = (cursor + target).min(chars.len());
+        if end < chars.len() {
+            let search_start = cursor + ((end - cursor) / 2);
+            for candidate in (search_start..end).rev() {
+                if chars[candidate].is_whitespace() {
+                    end = candidate;
+                    break;
+                }
+            }
+        }
+        if end <= cursor {
+            end = (cursor + target).min(chars.len());
+        }
+        let page = chars[cursor..end]
+            .iter()
+            .collect::<String>()
+            .trim()
+            .to_string();
+        if !page.is_empty() {
+            pages.push(page);
+        }
+        cursor = end;
+        while cursor < chars.len() && chars[cursor].is_whitespace() {
+            cursor += 1;
+        }
+    }
+    pages
 }
 
 fn extract_image(path: &Path) -> Result<DocumentExtraction> {
@@ -246,7 +354,15 @@ fn extract_image(path: &Path) -> Result<DocumentExtraction> {
                     .to_string(),
                 }],
                 chunks,
-                warnings: vec![],
+                warnings: if text.trim().is_empty() {
+                    vec!["ocr_attempted:tesseract".to_string()]
+                } else {
+                    vec![
+                        "ocr_attempted:tesseract".to_string(),
+                        "ocr_succeeded:tesseract".to_string(),
+                        "ocr_confidence:unavailable".to_string(),
+                    ]
+                },
             })
         }
         Ok(result) => Ok(DocumentExtraction {
@@ -259,10 +375,13 @@ fn extract_image(path: &Path) -> Result<DocumentExtraction> {
                 sha256: None,
             }],
             chunks: vec![],
-            warnings: vec![format!(
-                "tesseract_failed:{}",
-                String::from_utf8_lossy(&result.stderr).trim()
-            )],
+            warnings: vec![
+                "ocr_attempted:tesseract".to_string(),
+                format!(
+                    "tesseract_failed:{}",
+                    String::from_utf8_lossy(&result.stderr).trim()
+                ),
+            ],
         }),
         Err(error) => Ok(DocumentExtraction {
             mime_type: Some(mime_type_for_path(path)),
@@ -274,7 +393,10 @@ fn extract_image(path: &Path) -> Result<DocumentExtraction> {
                 sha256: None,
             }],
             chunks: vec![],
-            warnings: vec![format!("tesseract_not_available:{}", error)],
+            warnings: vec![
+                "ocr_tool_missing:tesseract".to_string(),
+                format!("tesseract_not_available:{}", error),
+            ],
         }),
     }
 }
@@ -569,5 +691,105 @@ mod tests {
             .any(|warning| warning == "unsupported_file_type"));
 
         let _ = fs::remove_file(path);
+    }
+
+    #[test]
+    fn ocr_recovery_state_marks_success_as_source_ready() {
+        let extraction = DocumentExtraction {
+            mime_type: Some("image/png".to_string()),
+            page_count: 1,
+            ocr_status: "ok".to_string(),
+            pages: vec![ExtractedPage {
+                page_number: 1,
+                text_status: "ocr_extracted".to_string(),
+                sha256: Some(sha256_text("lesbar tekst")),
+            }],
+            chunks: split_text_into_chunks("lesbar tekst fra bilde", 1),
+            warnings: vec![
+                "ocr_attempted:tesseract".to_string(),
+                "ocr_succeeded:tesseract".to_string(),
+                "ocr_confidence:unavailable".to_string(),
+            ],
+        };
+
+        assert_eq!(ocr_recovery_state(&extraction), "ocr_succeeded");
+        assert!(ocr_was_attempted(&extraction));
+        assert!(!extraction_requires_manual_review(&extraction));
+        assert!(extraction_is_source_ready(&extraction));
+    }
+
+    #[test]
+    fn ocr_recovery_state_keeps_failed_ocr_out_of_sources() {
+        let extraction = DocumentExtraction {
+            mime_type: Some("image/png".to_string()),
+            page_count: 1,
+            ocr_status: "failed".to_string(),
+            pages: vec![ExtractedPage {
+                page_number: 1,
+                text_status: "needs_ocr".to_string(),
+                sha256: None,
+            }],
+            chunks: vec![],
+            warnings: vec![
+                "ocr_attempted:tesseract".to_string(),
+                "tesseract_failed:no text".to_string(),
+            ],
+        };
+
+        assert_eq!(ocr_recovery_state(&extraction), "ocr_failed");
+        assert!(ocr_was_attempted(&extraction));
+        assert!(extraction_requires_manual_review(&extraction));
+        assert!(!extraction_is_source_ready(&extraction));
+    }
+
+    #[test]
+    fn ocr_recovery_state_keeps_missing_ocr_tool_non_green() {
+        let extraction = DocumentExtraction {
+            mime_type: Some("image/png".to_string()),
+            page_count: 1,
+            ocr_status: "needs_ocr".to_string(),
+            pages: vec![ExtractedPage {
+                page_number: 1,
+                text_status: "needs_ocr".to_string(),
+                sha256: None,
+            }],
+            chunks: vec![],
+            warnings: vec![
+                "ocr_tool_missing:tesseract".to_string(),
+                "tesseract_not_available:not found".to_string(),
+            ],
+        };
+
+        assert_eq!(ocr_recovery_state(&extraction), "ocr_queued");
+        assert!(ocr_was_attempted(&extraction));
+        assert!(!extraction_requires_manual_review(&extraction));
+        assert!(!extraction_is_source_ready(&extraction));
+    }
+
+    #[test]
+    fn ocr_needed_is_pipeline_state_not_manual_review() {
+        let extraction = DocumentExtraction {
+            mime_type: Some("application/pdf".to_string()),
+            page_count: 2,
+            ocr_status: "partial_needs_ocr".to_string(),
+            pages: vec![
+                ExtractedPage {
+                    page_number: 1,
+                    text_status: "extracted".to_string(),
+                    sha256: Some(sha256_text("lesbar side")),
+                },
+                ExtractedPage {
+                    page_number: 2,
+                    text_status: "needs_ocr".to_string(),
+                    sha256: None,
+                },
+            ],
+            chunks: split_text_into_chunks("lesbar side", 1),
+            warnings: vec!["1_pages_need_ocr_or_have_no_text_layer".to_string()],
+        };
+
+        assert_eq!(ocr_recovery_state(&extraction), "ocr_queued");
+        assert!(!extraction_requires_manual_review(&extraction));
+        assert!(!extraction_is_source_ready(&extraction));
     }
 }

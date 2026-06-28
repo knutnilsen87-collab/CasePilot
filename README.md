@@ -132,3 +132,9 @@ Run the current hardening gate:
 ```powershell
 powershell -ExecutionPolicy Bypass -File ops\Test-EvidaHardening.ps1
 ```
+
+Run the first-user desktop readiness batch for the local test-data release boundary:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ops\Test-EvidaFirstUserDesktopReadiness.ps1
+```

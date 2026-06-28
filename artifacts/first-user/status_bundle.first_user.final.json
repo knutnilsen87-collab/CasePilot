@@ -1,135 +1,293 @@
 {
-    "bundle_id":  "SB-FIRST-USER-EVIDA-LOCAL-2026-05-13",
-    "bundle_version":  1,
-    "domain":  "casepilot_first_user_release",
-    "release_candidate_id":  "evida-0.1.0-alpha-local-2026-05-13",
-    "commit_sha":  "local-working-tree",
-    "created_at":  "2026-05-13T11:38:36Z",
-    "updated_at":  "2026-05-15T14:25:05+02:00",
-    "current_state":  {
-                          "lifecycle_state":  "evidence_collected",
-                          "status":  "blocked",
-                          "terminal_state":  false,
-                          "first_user_allowed":  false
-                      },
-    "summary":  {
-                    "short_summary":  "Automated evidence has improved, but first-user release remains blocked.",
-                    "technical_summary":  "Desktop/release gates pass; Maven/backend tests, Rust tests, document-upload stress suite, frontend tests/build, release verification, and gitleaks secret scan pass locally. The current working tree adds upload safety and extraction failure-mode tests, prompt-injection echo blocking in provider answer validation, a central import outcome/next-action model, a dedicated document-control workspace, filtered document lists, clearer manual-review actions, completed-import ETA suppression, limited-source Saksrom behavior, an explicit external-provider policy gate, demo-login gating, layout hardening for the upload/control flow, scroll-neutral import/status containers with browser scroll anchoring disabled, fail-closed terminal import rules so stale processing signals cannot show 'Import pågår' when every selected document is already terminal, and explicit sidebar action contrast rules for light/dark mode. First-user approval remains blocked by operational/manual gates, unsigned Windows artifacts, missing signed SBOM/CI SCA/SAST, missing clean-machine smoke, and missing approvals.",
-                    "user_visible_summary":  "Not approved for first user yet."
-                },
-    "scope_lock":  {
-                       "allowed_data":  "synthetic_or_redacted_test_data",
-                       "real_client_data_allowed":  false,
-                       "external_ai_raw_document_upload_allowed":  false,
-                       "document_upload_required":  true,
-                       "source_bound_ai_required":  true
-                   },
-    "invariant_layer":  {
-                            "critical_invariants":  [
-                                                        "INV-DOC-001",
-                                                        "INV-DOC-002",
-                                                        "INV-DOC-003",
-                                                        "INV-DOC-004",
-                                                        "INV-DATA-001",
-                                                        "INV-DATA-002",
-                                                        "INV-AI-001",
-                                                        "INV-AI-002",
-                                                        "INV-AUDIT-001",
-                                                        "INV-AUDIT-002",
-                                                        "INV-CONFIG-001",
-                                                        "INV-CONFIG-002"
-                                                    ],
-                            "broken_invariants":  [
-
-                                                  ],
-                            "untested_invariants":  [
-                                                        "INV-DATA-001",
-                                                        "INV-DATA-002",
-                                                        "INV-AUDIT-001"
-                                                    ],
-                            "evaluation_ref":  "artifacts/first-user/invariant_evaluation.first_user.json"
-                        },
-    "evidence_layer":  {
-                           "artifact_refs":  [
-                                                 "artifacts/first-user/evidence.first_user.current.json",
-                                                 "artifacts/first-user/invariant_evaluation.first_user.json",
-                                                 "artifacts/production-dod/evida-production-dod-report.json",
-                                                 "Evida Release/release-manifest.json",
-                                                 "Evida Release/SHA256SUMS.txt",
-                                                 "artifacts/security/evida-security-evidence.json",
-                                                 "artifacts/security/gitleaks-report.json",
-                                                 "artifacts/security/npm-audit.json"
-                                             ],
-                           "ci_refs":  [
-
-                                       ],
-                           "manual_smoke_refs":  [
-
-                                                 ],
-                           "evidence_quality":  "partial",
-                           "evidence_gaps":  [
-                                                 {
-                                                     "id":  "GAP-CLEAN-MACHINE-SMOKE",
-                                                     "gate":  "clean_machine_smoke",
-                                                     "status":  "blocked",
-                                                     "required_action":  "Run clean-machine smoke on a separate Windows profile or machine and attach manual evidence."
-                                                 },
-                                                 {
-                                                     "id":  "GAP-SBOM-SCA-SAST",
-                                                     "gate":  "signed_sbom_and_security_scan",
-                                                     "status":  "blocked",
-                                                     "required_action":  "Generate signed SBOM and CI SCA/SAST report with no release-blocking findings."
-                                                 },
-                                                 {
-                                                     "id":  "GAP-CODE-SIGNING",
-                                                     "gate":  "windows_code_signing",
-                                                     "status":  "blocked",
-                                                     "required_action":  "Sign Windows executable and installers."
-                                                 },
-                                                 {
-                                                     "id":  "GAP-MANUAL-APPROVAL",
-                                                     "gate":  "manual_approval",
-                                                     "status":  "blocked",
-                                                     "required_action":  "Complete engineering, product, and security/privacy approval checklist."
-                                                 }
-                                             ]
-                       },
-    "verification_layer":  {
-                               "verification_status":  "blocked",
-                               "coverage_status":  "partial",
-                               "residual_risk":  "medium_high",
-                               "false_green_risk":  "controlled_by_fail_closed_gates",
-                               "p0_status":  "blocked",
-                               "document_upload_status":  "partial",
-                               "ai_source_control_status":  "partial",
-                               "audit_status":  "partial"
-                           },
-    "ambiguity_layer":  {
-                            "flags":  [
-                                          "coverage_partial",
-                                          "manual_approval_missing",
-                                          "unsigned_release"
-                                      ]
-                        },
-    "action_layer":  {
-                         "recommended_next_action":  "Run clean-machine smoke, sign release artifacts, generate signed SBOM/CI SCA/SAST, complete privacy/legal readiness decisions and approval checklist, then update status bundle.",
-                         "fallback_action":  "Keep release as internal developer-only build with synthetic fixtures.",
-                         "rollback_path":  "Do not distribute release candidate; revoke build artifact if already shared. Delete local test data with Evida reset command if needed."
-                     },
-    "trust_layer":  {
-                        "confidence_overall":  0.62,
-                        "approval_recommendation":  "blocked"
-                    },
-    "closure_layer":  {
-                          "closure_decision":  "blocked",
-                          "approved_by_review":  false,
-                          "remaining_unknowns":  [
-                                                     "Manual clean-machine install/start behavior.",
-                                                     "Signed SBOM/CI SCA/SAST result.",
-                                                     "Windows code-signing certificate/signature result.",
-                                                     "Privacy/legal operational decision for real juridical data.",
-                                                     "Human approval decision."
-                                                 ],
-                          "failure_to_asset_required":  false
-                      }
+  "bundle_id": "SB-FIRST-USER-EVIDA-LOCAL-2026-05-13",
+  "bundle_version": 1,
+  "domain": "casepilot_first_user_release",
+  "release_candidate_id": "evida-0.1.0-alpha-local-2026-05-13",
+  "commit_sha": "local-working-tree",
+  "created_at": "2026-05-13T11:38:36Z",
+  "updated_at": "2026-05-20T00:00:00+02:00",
+  "current_state": {
+    "lifecycle_state": "evidence_collected",
+    "status": "blocked",
+    "terminal_state": false,
+    "first_user_allowed": false,
+    "real_client_data_allowed": false,
+    "production_ready": false
+  },
+  "summary": {
+    "short_summary": "Production-ready-only policy is active; first-user and client-data desktop release remain blocked.",
+    "technical_summary": "Client-data gates now fail closed: PARTIAL, SKIPPED, and UNKNOWN count as BLOCKED. Document replacement is blocked until versioned supersede semantics, source invalidation, audit, and AI exclusion are production-ready. Small-text/image OCR remains blocked until automatic enhancement, retry metadata, confidence storage, and source_ready gating are verified.",
+    "user_visible_summary": "Not approved for first user or real client data. Features that are not production-ready stay blocked or disabled."
+  },
+  "scope_lock": {
+    "allowed_data": "synthetic_or_redacted_test_data",
+    "real_client_data_allowed": false,
+    "external_ai_raw_document_upload_allowed": false,
+    "document_upload_required": true,
+    "source_bound_ai_required": true,
+    "client_data_desktop_dod_required": true
+  },
+  "invariant_layer": {
+    "critical_invariants": [
+      "INV-DOC-001",
+      "INV-DOC-002",
+      "INV-DOC-003",
+      "INV-DOC-004",
+      "INV-DATA-001",
+      "INV-DATA-002",
+      "INV-AI-001",
+      "INV-AI-002",
+      "INV-AUDIT-001",
+      "INV-AUDIT-002",
+      "INV-CONFIG-001",
+      "INV-CONFIG-002",
+      "INV-WIN-001",
+      "INV-DATA-003",
+      "INV-DATA-004",
+      "INV-RELEASE-001",
+      "INV-APPROVAL-001",
+      "INV-DOC-REPLACE-001",
+      "INV-OCR-001"
+    ],
+    "broken_invariants": [],
+    "untested_invariants": [
+      "INV-DATA-001",
+      "INV-DATA-002",
+      "INV-AUDIT-001",
+      "INV-WIN-001",
+      "INV-DATA-003",
+      "INV-DATA-004",
+      "INV-RELEASE-001",
+      "INV-APPROVAL-001",
+      "INV-DOC-REPLACE-001",
+      "INV-OCR-001"
+    ],
+    "evaluation_ref": "artifacts/first-user/invariant_evaluation.first_user.json"
+  },
+  "evidence_layer": {
+    "artifact_refs": [
+      "artifacts/first-user/evidence.first_user.current.json",
+      "artifacts/first-user/invariant_evaluation.first_user.json",
+      "artifacts/production-dod/evida-production-dod-report.json",
+      "Evida Release/release-manifest.json",
+      "Evida Release/SHA256SUMS.txt",
+      "artifacts/security/evida-security-evidence.json",
+      "artifacts/security/gitleaks-report.json",
+      "artifacts/security/npm-audit.json",
+      "docs/first-user/CLIENT_DATA_DESKTOP_DOD.md",
+      "docs/first-user/DEVELOPER_CODEX_DESKTOP_DOD_EXECUTION_PLAN.md",
+      "docs/first-user/STATUS_BUNDLE_UPDATE_RULE.md",
+      "docs/first-user/CODEX_TASK_CLIENT_DATA_DESKTOP_DOD.md",
+      "artifacts/first-user/client_data_desktop_dod_status_bundle_patch.template.json",
+      "ops/Test-EvidaWindowsPolicyDiagnostics.ps1",
+      "ops/Test-EvidaClientDataDesktopDoD.ps1",
+      "artifacts/first-user/client_data_desktop_dod_result.json",
+      "artifacts/first-user/signature_verification.json",
+      "artifacts/first-user/windows_policy_diagnostics.current.json",
+      "artifacts/first-user/windows_managed_workstation_smoke.json",
+      "artifacts/first-user/raw_storage_inspection.json",
+      "artifacts/first-user/encryption_verification.json",
+      "artifacts/first-user/backup_restore_result.json",
+      "artifacts/first-user/deletion_retention_result.json",
+      "artifacts/first-user/provider_policy_result.json",
+      "artifacts/first-user/runtime_sensitive_log_scan.json",
+      "artifacts/first-user/document_upload_final_result.json",
+      "artifacts/first-user/manual_review_result.json",
+      "artifacts/first-user/import_eta_result.json",
+      "artifacts/first-user/ai_multi_doc_eval.json",
+      "artifacts/first-user/prompt_injection_eval.json",
+      "artifacts/first-user/unsupported_claim_eval.json",
+      "artifacts/first-user/retrieval_snapshot_eval.json",
+      "artifacts/first-user/audit_coverage_result.json",
+      "artifacts/first-user/export_smoke_result.json",
+      "artifacts/first-user/braathe_approval.json",
+      "artifacts/first-user/client_data_pilot_approval.json",
+      "artifacts/first-user/engineering_approval.json",
+      "artifacts/first-user/product_approval.json",
+      "artifacts/first-user/security_privacy_approval.json"
+    ],
+    "ci_refs": [],
+    "manual_smoke_refs": [],
+    "evidence_quality": "fail_closed_partial_current_evidence",
+    "evidence_gaps": [
+      {
+        "id": "GAP-CLEAN-MACHINE-SMOKE",
+        "gate": "clean_machine_smoke",
+        "status": "blocked",
+        "required_action": "Run clean-machine smoke on a separate Windows profile or machine and attach manual evidence."
+      },
+      "Client-data desktop DoD result is blocked by required external and release-evidence gates.",
+      "Managed Windows/Braathe/Jussys smoke has not run on target infrastructure.",
+      "Signed release and signed SBOM/SCA/SAST evidence are missing.",
+      "Synthetic client-data marker import/raw-storage/log-flow evidence is missing.",
+      "Formal product, engineering, security/privacy, Braathe/IT, and pilot approvals are missing."
+    ]
+  },
+  "verification_layer": {
+    "verification_status": "blocked",
+    "coverage_status": "blocked",
+    "residual_risk": "high_until_client_data_dod_closes",
+    "false_green_risk": "controlled_by_fail_closed_gates",
+    "p0_status": "blocked",
+    "document_upload_status": "blocked_document_replace_and_ocr_recovery_not_production_ready",
+    "ai_source_control_status": "blocked_until_only_active_source_ready_versions_can_be_used",
+    "audit_status": "blocked_document_replace_audit_not_verified",
+    "signing_status": "blocked_not_signed",
+    "client_data_safety_status": "blocked_marker_storage_proof_missing",
+    "multi_doc_eval_status": "blocked",
+    "approval_status": "blocked_missing_approvals",
+    "clean_machine_smoke_status": "blocked_not_run",
+    "managed_windows_status": "blocked_not_run_on_target",
+    "export_status": "blocked_not_verified",
+    "runtime_log_scan_status": "blocked_marker_flow_not_run",
+    "release_security_status": "blocked",
+    "release_artifact_integrity_status": "pass"
+  },
+  "ambiguity_layer": {
+    "flags": [
+      "coverage_partial",
+      "manual_approval_missing",
+      "unsigned_release",
+      "client_data_dod_incomplete",
+      "managed_windows_unverified",
+      "runtime_log_scan_missing",
+      "real_client_data_blocked",
+      "release_manifest_schema_mismatch",
+      "production_ready_only_policy_active",
+      "partial_counts_as_blocked",
+      "document_replace_disabled_until_versioned_supersede",
+      "small_text_ocr_recovery_not_production_ready"
+    ]
+  },
+  "action_layer": {
+    "recommended_next_action": "Implement production-grade document replacement and OCR recovery: versioned supersede semantics, source invalidation, document_replaced audit, active-source-only AI gating, automatic OCR enhancement/retry metadata/confidence, and update evidence before enabling client data.",
+    "fallback_action": "Disable Erstatt fil where production-grade replacement is not ready; keep affected documents outside source basis and keep status_bundle BLOCKED.",
+    "rollback_path": "Do not distribute release candidate; revoke build artifact if already shared. Delete local test data with Evida reset command if needed."
+  },
+  "trust_layer": {
+    "confidence_overall": 0.62,
+    "approval_recommendation": "blocked"
+  },
+  "closure_layer": {
+    "closure_decision": "blocked",
+    "approved_by_review": false,
+    "remaining_unknowns": [
+      "Manual clean-machine install/start behavior.",
+      "Signed SBOM/CI SCA/SAST result.",
+      "Windows code-signing certificate/signature result.",
+      "Privacy/legal operational decision for real juridical data.",
+      "Human approval decision.",
+      "Managed Windows/Braathe/Jussys compatibility is not verified.",
+      "Client-data local encryption/raw storage/deletion-retention gates are incomplete.",
+      "Runtime sensitive marker log scan has not passed.",
+      "Client-data pilot/Braathe/IT approvals are missing.",
+      "Client-data desktop DoD result is blocked.",
+      "Generated approval artifacts are missing approvals, not approvals."
+    ],
+    "failure_to_asset_required": false
+  },
+  "client_data_desktop_dod": {
+    "status": "blocked",
+    "first_user_allowed": false,
+    "real_client_data_allowed": false,
+    "production_ready": false,
+    "required_before_green": [
+      "managed_windows_braathe_jussys_compatibility",
+      "signed_app_and_installer",
+      "clean_machine_smoke",
+      "local_client_data_encryption",
+      "runtime_sensitive_log_scan",
+      "document_upload_final_closure",
+      "multi_document_source_bound_ai",
+      "full_audit_coverage",
+      "export_with_source_basis",
+      "release_security_sca_sast_sbom",
+      "manual_approvals"
+    ],
+    "verification_layer": {
+      "managed_windows_status": "blocked_not_run_on_target",
+      "signing_status": "blocked_not_signed",
+      "clean_machine_smoke_status": "blocked_not_run",
+      "client_data_safety_status": "blocked_marker_storage_proof_missing",
+      "runtime_log_scan_status": "blocked_marker_flow_not_run",
+      "document_upload_status": "blocked_document_replace_and_ocr_recovery_not_production_ready",
+      "ai_source_control_status": "blocked_until_only_active_source_ready_versions_can_be_used",
+      "audit_status": "blocked_document_replace_audit_not_verified",
+      "export_status": "blocked_not_verified",
+      "release_security_status": "blocked",
+      "approval_status": "blocked_missing_approvals"
+    },
+    "action_layer": {
+      "recommended_next_action": "Use artifacts/first-user/client_data_desktop_dod_result.json as the phase ledger; keep real client data blocked until every P0 client-data artifact is pass and approvals are present.",
+      "fallback_action": "Continue synthetic/redacted evaluation only."
+    },
+    "closure_layer": {
+      "closure_decision": "blocked",
+      "approved_by_review": false,
+      "remaining_unknowns": [
+        "Braathe/IT approval not verified",
+        "client-data safety gates not complete",
+        "clean-machine smoke not complete",
+        "release signing/security gates not complete",
+        "Generated client-data DoD artifacts are present but blocked.",
+        "Release artifacts must be regenerated/signed and verified.",
+        "Synthetic client-data marker flow must be executed on a managed target machine.",
+        "Production-grade document replacement/versioning is not implemented.",
+        "Small-text/image OCR enhancement and retry confidence flow is not production-ready.",
+        "document_replaced/source_object_invalidated audit evidence is missing."
+      ]
+    },
+    "result_ref": "artifacts/first-user/client_data_desktop_dod_result.json",
+    "quality_policy": {
+      "quality_bar": "production_ready_only",
+      "minimum_viable_mode": false,
+      "partial_allowed_for_client_data": false,
+      "fallback_policy": "block_or_disable_not_workaround",
+      "current_state": {
+        "first_user_allowed": false,
+        "real_client_data_allowed": false,
+        "production_ready": false
+      },
+      "closure_rule": {
+        "pass_requires_all_p0": true,
+        "partial_counts_as_blocked": true,
+        "skipped_counts_as_blocked": true,
+        "unknown_counts_as_blocked": true,
+        "manual_approval_required": true,
+        "status_bundle_update_required": true
+      }
+    },
+    "document_replace": {
+      "status": "blocked",
+      "required_solution": "versioned replacement with supersede semantics",
+      "not_allowed": "import new duplicate file",
+      "if_not_ready": "disable replace button",
+      "ui_state": "disabled_until_production_grade_replace_exists"
+    },
+    "small_text_ocr": {
+      "status": "blocked",
+      "required_solution": "automatic image preprocessing and OCR retry",
+      "not_allowed": "give up immediately and push burden to user",
+      "if_not_ready": "mark not source_ready and block AI usage"
+    }
+  },
+  "quality_policy": {
+    "quality_bar": "production_ready_only",
+    "minimum_viable_mode": false,
+    "partial_allowed_for_client_data": false,
+    "fallback_policy": "block_or_disable_not_workaround",
+    "current_state": {
+      "first_user_allowed": false,
+      "real_client_data_allowed": false,
+      "production_ready": false
+    },
+    "closure_rule": {
+      "pass_requires_all_p0": true,
+      "partial_counts_as_blocked": true,
+      "skipped_counts_as_blocked": true,
+      "unknown_counts_as_blocked": true,
+      "manual_approval_required": true,
+      "status_bundle_update_required": true
+    }
+  }
 }

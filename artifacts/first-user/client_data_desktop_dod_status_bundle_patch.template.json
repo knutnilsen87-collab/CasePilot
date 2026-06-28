@@ -1,0 +1,89 @@
+{
+  "quality_policy": {
+    "quality_bar": "production_ready_only",
+    "minimum_viable_mode": false,
+    "partial_allowed_for_client_data": false,
+    "fallback_policy": "block_or_disable_not_workaround",
+    "current_state": {
+      "first_user_allowed": false,
+      "real_client_data_allowed": false,
+      "production_ready": false
+    },
+    "closure_rule": {
+      "pass_requires_all_p0": true,
+      "partial_counts_as_blocked": true,
+      "skipped_counts_as_blocked": true,
+      "unknown_counts_as_blocked": true,
+      "manual_approval_required": true,
+      "status_bundle_update_required": true
+    }
+  },
+  "client_data_desktop_dod": {
+    "status": "blocked",
+    "first_user_allowed": false,
+    "real_client_data_allowed": false,
+    "production_ready": false,
+    "quality_policy_ref": "quality_policy",
+    "document_replace": {
+      "status": "blocked",
+      "required_solution": "versioned replacement with supersede semantics",
+      "not_allowed": "import new duplicate file",
+      "if_not_ready": "disable replace button"
+    },
+    "small_text_ocr": {
+      "status": "blocked",
+      "required_solution": "automatic image preprocessing and OCR retry",
+      "not_allowed": "give up immediately and push burden to user",
+      "if_not_ready": "mark not source_ready and block AI usage"
+    },
+    "required_before_green": [
+      "managed_windows_braathe_jussys_compatibility",
+      "signed_app_and_installer",
+      "clean_machine_smoke",
+      "local_client_data_encryption",
+      "runtime_sensitive_log_scan",
+      "document_upload_final_closure",
+      "multi_document_source_bound_ai",
+      "full_audit_coverage",
+      "export_with_source_basis",
+      "release_security_sca_sast_sbom",
+      "manual_approvals"
+    ],
+    "verification_layer": {
+      "managed_windows_status": "blocked",
+      "signing_status": "blocked",
+      "clean_machine_smoke_status": "blocked",
+      "client_data_safety_status": "blocked",
+      "runtime_log_scan_status": "blocked",
+      "document_upload_status": "partial_or_pass_needs_current_evidence",
+      "ai_source_control_status": "blocked",
+      "audit_status": "partial_or_blocked",
+      "export_status": "blocked",
+      "release_security_status": "blocked",
+      "approval_status": "blocked"
+    },
+    "invariant_layer": {
+      "broken_invariants": [],
+      "untested_invariants": [
+        "INV-DATA-001",
+        "INV-DATA-002",
+        "INV-AUDIT-001",
+        "INV-EXPORT-001"
+      ]
+    },
+    "action_layer": {
+      "recommended_next_action": "Add CLIENT_DATA_DESKTOP_DOD.md, update readiness matrix, and keep verdict BLOCKED until P0 evidence exists.",
+      "fallback_action": "Continue synthetic/redacted evaluation only."
+    },
+    "closure_layer": {
+      "closure_decision": "blocked",
+      "approved_by_review": false,
+      "remaining_unknowns": [
+        "Braathe/IT approval not verified",
+        "client-data safety gates not complete",
+        "clean-machine smoke not complete",
+        "release signing/security gates not complete"
+      ]
+    }
+  }
+}

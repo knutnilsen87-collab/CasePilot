@@ -1,0 +1,70 @@
+/* Evida Design System — Single token source. Everything else references these. */
+/* Sampled from existing dark/light theme; do not add raw hex values outside this file. */
+
+:root {
+  /* ── Backgrounds: 3 layers ── */
+  --bg-app:     #f7f6f2;   /* deepest — app shell */
+  --bg-surface: #fbf8ee;   /* cards / sections */
+  --bg-raised:  #ffffff;   /* hover / active state */
+
+  /* ── Text: 3 levels ── */
+  --text-primary:   #171717;  /* ~90 % */
+  --text-secondary: #374151;  /* ~65 % — must be legible */
+  --text-muted:     #716b61;  /* ~45 % — truly secondary only */
+
+  /* ── Accent: ONE — reserved for the single primary action per screen ── */
+  --accent:      #3dd6c6;
+  --accent-text: #111827;   /* dark text on teal */
+
+  /* ── Status: semantic only — used in StatusBadge + status text ── */
+  --status-ready:     #15803d;
+  --status-ready-bg:  rgba(21, 128, 61, 0.09);
+  --status-review:    #d97706;
+  --status-review-bg: rgba(217, 119, 6, 0.09);
+  --status-muted:     #716b61;
+  --status-muted-bg:  rgba(113, 107, 97, 0.09);
+
+  /* ── Border: hairline ── */
+  --border: rgba(0, 0, 0, 0.09);
+
+  /* ── Spacing scale: 4 · 8 · 12 · 16 · 24 · 32 ── */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* ── Radius ── */
+  --r-sm: 8px;
+  --r-lg: 14px;
+
+  /* ── Type scale ── */
+  --t-screen: 26px;  /* screen title */
+  --t-label:  12px;  /* section label — uppercase + tracking */
+  --t-body:   15px;  /* body text */
+  --t-small:  13px;  /* small / meta */
+}
+
+/* Dark theme overrides */
+.app-shell[data-theme="dark"] {
+  --bg-app:     #151515;
+  --bg-surface: #1d1c1a;
+  --bg-raised:  #242321;
+
+  --text-primary:   #f4f1ea;
+  --text-secondary: #bdb6aa;
+  --text-muted:     #827b70;
+
+  --accent:      #3dd6c6;
+  --accent-text: #111827;
+
+  --status-ready:     #69d391;
+  --status-ready-bg:  rgba(105, 211, 145, 0.12);
+  --status-review:    #f1c76a;
+  --status-review-bg: rgba(241, 199, 106, 0.12);
+  --status-muted:     #827b70;
+  --status-muted-bg:  rgba(130, 123, 112, 0.12);
+
+  --border: rgba(255, 255, 255, 0.08);
+}

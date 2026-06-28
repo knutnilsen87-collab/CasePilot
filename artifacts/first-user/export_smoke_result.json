@@ -1,0 +1,14 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "name":  "export_smoke",
+    "blocker":  "Export/redaction smoke has not been captured on a release build.",
+    "required_evidence":  [
+                              "export allowed content",
+                              "redaction policy",
+                              "audit event",
+                              "no hidden source leakage"
+                          ],
+    "real_client_data_allowed":  false
+}

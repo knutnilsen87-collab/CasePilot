@@ -1,0 +1,26 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9410535Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "target":  "managed Windows workstation with Jussys/Braathe policy",
+    "executed_on_target":  false,
+    "steps":  [
+                  {
+                      "name":  "install signed release",
+                      "status":  "not_run"
+                  },
+                  {
+                      "name":  "launch under policy",
+                      "status":  "not_run"
+                  },
+                  {
+                      "name":  "import synthetic case package",
+                      "status":  "not_run"
+                  },
+                  {
+                      "name":  "verify no client data leaves approved storage",
+                      "status":  "not_run"
+                  }
+              ],
+    "blocker":  "Requires access to the managed target workstation and organization policy context."
+}

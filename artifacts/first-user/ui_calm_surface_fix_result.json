@@ -1,0 +1,49 @@
+{
+  "artifact": "ui_calm_surface_fix_result",
+  "created_at": "2026-06-04T12:45:00+02:00",
+  "scope": "evida-core/desktop-tauri calm document import surface",
+  "p0_p1_p2": "P0-adjacent UI safety surface for document import visibility; no backend upload, OCR, replacement, AI retrieval, audit, auth, tenant, policy, or provider routing behavior changed.",
+  "changes_verified": [
+    "Import summary leads with source-ready and needs-control counts instead of source coverage percentage.",
+    "Raw SQL/database/internal import messages are mapped to safe default copy in normal UI.",
+    "Technical details are explicit and collapsed behind details affordances.",
+    "Sidebar preliminary labels avoid repeated OCR alarm badges.",
+    "Visible Norwegian UI strings in touched desktop surfaces were checked for mojibake markers."
+  ],
+  "automated_validation": [
+    {
+      "command": "npm.cmd test",
+      "working_directory": "evida-core/desktop-tauri",
+      "result": "pass"
+    },
+    {
+      "command": "npm.cmd run build",
+      "working_directory": "evida-core/desktop-tauri",
+      "result": "pass"
+    }
+  ],
+  "manual_smoke": {
+    "result": "partial",
+    "steps_run": [
+      "Started Vite dev server on http://127.0.0.1:5177/.",
+      "Opened the app in the in-app browser.",
+      "Clicked the intro surface into document import.",
+      "Verified DOM text for import surface includes Velg mappe, supported file types, source-ready count, and no mojibake markers."
+    ],
+    "not_run": [
+      "Full desktop Tauri import of the 218-document pack was not run in this automated pass.",
+      "Screenshot capture timed out in the in-app browser, so visual evidence is DOM/text based."
+    ]
+  },
+  "invariants_affected": [
+    "INV-DOC-004"
+  ],
+  "invariants_not_reverified": [
+    "Full document upload failure matrix",
+    "AI source-bound answer behavior",
+    "Audit tamper chain"
+  ],
+  "residual_risk": "Manual 218-document desktop import smoke remains required before claiming first-user release readiness.",
+  "rollback_path": "Revert the touched desktop UI and test files from this patch; no schema/backend rollback is required.",
+  "repo_health_verdict": "improved"
+}

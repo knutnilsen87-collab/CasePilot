@@ -1,0 +1,8 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "partial",
+    "verdict":  "blocked",
+    "existing_invariant_reference":  "source-bound AI behavior is covered by first-user invariants",
+    "multi_doc_release_eval_verified":  false,
+    "blocker":  "Unsupported-claim behavior must be verified in the multi-document release evaluation."
+}

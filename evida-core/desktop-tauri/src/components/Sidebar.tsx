@@ -171,6 +171,10 @@ export function Sidebar({
           </ul>
         </div>
       ))}
+      <footer className="sidebar-build-stamp">
+        <span>{__GIT_HASH__}</span>
+        <span>{__BUILD_TIME__}</span>
+      </footer>
     </nav>
   );
 }

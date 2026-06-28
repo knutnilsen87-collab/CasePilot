@@ -186,6 +186,7 @@ fn issue_for_extraction(
         .iter()
         .filter(|page| page.text_status == "needs_ocr")
         .count() as i64;
+    let requires_manual_review = crate::ingestion::extraction_requires_manual_review(extraction);
     if extraction.ocr_status == "unsupported_file_type" {
         return (
             "unsupported",
@@ -201,15 +202,17 @@ fn issue_for_extraction(
             true,
         );
     }
-    if extraction.ocr_status == "needs_ocr" || (sources_created == 0 && pages_requires_ocr > 0) {
+    if extraction.ocr_status == "needs_ocr"
+        || (requires_manual_review && sources_created == 0 && pages_requires_ocr > 0)
+    {
         return (
             "ocr_required",
             Some("OCR_REQUIRED"),
-            Some("warning"),
-            "Krever OCR - Evida fant sider uten lesbar tekst.".to_string(),
+            Some("info"),
+            "Gjor sokbar - Evida har lagt skannede sider i OCR-ko.".to_string(),
             Some(extraction.warnings.join(" | ")),
-            "Kjør OCR eller last opp en tekstbasert PDF.",
-            true,
+            "Ingen brukerhandling na. Evida gjor dokumentet sokbart automatisk nar OCR-motoren er tilgjengelig.",
+            false,
             false,
         );
     }
@@ -219,11 +222,11 @@ fn issue_for_extraction(
         return (
             "partial",
             Some("PARTIAL_TEXT_EXTRACTION"),
-            Some("warning"),
-            "Delvis behandlet - noen sider kan brukes, men resten krever OCR.".to_string(),
+            Some("info"),
+            "Klar delvis - lesbare sider er klare, og resten legges i OCR-ko.".to_string(),
             Some(extraction.warnings.join(" | ")),
-            "Kjør OCR for manglende sider før endelig vurdering.",
-            true,
+            "Ingen brukerhandling na. Saksrom bruker bare sidene som allerede har sporbare kilder.",
+            false,
             true,
         );
     }
@@ -239,7 +242,7 @@ fn issue_for_extraction(
             false,
         );
     }
-    if extraction.ocr_status == "failed" || sources_created == 0 {
+    if extraction.ocr_status == "failed" || (requires_manual_review && sources_created == 0) {
         return (
             "failed",
             Some("TEXT_EXTRACTION_FAILED"),
@@ -808,6 +811,228 @@ pub async fn register_document_in_session(
         );
         let _ = crate::db::recalculate_import_session(&conn, &import_session_id, false);
         Ok(final_item)
+    })
+    .await
+    .map_err(|error| error.to_string())?
+}
+
+#[tauri::command]
+pub async fn replace_document_file(
+    app: AppHandle,
+    case_id: String,
+    document_id: String,
+    path: String,
+) -> Result<DocumentIngestionReport, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let conn = crate::db::open_connection().map_err(|error| error.to_string())?;
+        let file_path = Path::new(&path);
+        let original_name = file_path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("unknown-file")
+            .to_string();
+        let session = crate::db::create_import_session(&conn, &case_id, 1)
+            .map_err(|error| error.to_string())?;
+        let item = crate::db::create_import_item(&conn, &session.id, &case_id, file_path)
+            .map_err(|error| error.to_string())?;
+        let _ = crate::db::create_import_source(
+            &conn,
+            &session.id,
+            &case_id,
+            "replacement_file",
+            &path,
+            1,
+            0,
+        );
+
+        let fail_item =
+            |conn: &rusqlite::Connection, error: String| -> Result<DocumentIngestionReport, String> {
+            let (status, issue_code, severity, message, action, can_retry) =
+                issue_for_import_error(&error, file_path);
+            let _ = crate::db::update_import_item(
+                conn,
+                &item.id,
+                status,
+                Some(issue_code),
+                Some(severity),
+                &message,
+                Some(&error),
+                action,
+                can_retry,
+                false,
+                None,
+                None,
+                0,
+                0,
+                0,
+                0,
+            );
+            let _ = crate::db::recalculate_import_session(conn, &session.id, true);
+            Err(message)
+        };
+
+        emit_document_processing_progress(
+            &app,
+            &case_id,
+            &path,
+            &original_name,
+            "validating",
+            12,
+            None,
+            None,
+            None,
+            "Validerer erstatningsfil",
+        );
+
+        let detection = match crate::ingestion_core::detect_file_type(file_path) {
+            Ok(value) => value,
+            Err(error) => return fail_item(&conn, error.to_string()),
+        };
+        crate::db::update_import_item_detection(&conn, &item.id, &detection)
+            .map_err(|error| error.to_string())?;
+        let safety = crate::ingestion_core::assess_file_safety(file_path, &detection);
+        if !safety.allowed {
+            let _ = crate::db::update_import_item(
+                &conn,
+                &item.id,
+                match safety.issue_code.as_deref() {
+                    Some("UNSUPPORTED_FILE_TYPE") => "unsupported",
+                    Some("ARCHIVE_PATH_TRAVERSAL_BLOCKED" | "ARCHIVE_BOMB_RISK") => {
+                        "security_blocked"
+                    }
+                    _ => "failed",
+                },
+                safety.issue_code.as_deref(),
+                safety.issue_severity.as_deref(),
+                &safety.user_message,
+                safety.technical_message.as_deref(),
+                &safety.recommended_action,
+                safety.retryable,
+                false,
+                Some(&detection.detected_mime_type),
+                None,
+                0,
+                0,
+                0,
+                0,
+            );
+            let _ = crate::db::recalculate_import_session(&conn, &session.id, true);
+            return Err(safety.user_message);
+        }
+
+        let sha256 = match crate::hash::sha256_file(file_path) {
+            Ok(value) => value,
+            Err(error) => return fail_item(&conn, error.to_string()),
+        };
+        crate::db::update_import_item(
+            &conn,
+            &item.id,
+            "extracting_text",
+            None,
+            None,
+            "Erstatter - Evida leser ny aktiv dokumentversjon.",
+            None,
+            "Vent til erstatningen er kontrollert.",
+            false,
+            true,
+            Some(&detection.detected_mime_type),
+            Some(&sha256),
+            0,
+            0,
+            0,
+            0,
+        )
+        .map_err(|error| error.to_string())?;
+
+        emit_document_processing_progress(
+            &app,
+            &case_id,
+            &path,
+            &original_name,
+            "extracting_text",
+            42,
+            None,
+            None,
+            None,
+            "Leser ny dokumentversjon",
+        );
+        let extraction = match crate::ingestion::extract_document(file_path) {
+            Ok(value) => value,
+            Err(error) => return fail_item(&conn, error.to_string()),
+        };
+        let pages_with_text = extraction
+            .pages
+            .iter()
+            .filter(|page| page.text_status == "extracted" || page.text_status == "ocr_extracted")
+            .count() as i64;
+        let pages_requires_ocr = extraction
+            .pages
+            .iter()
+            .filter(|page| page.text_status == "needs_ocr")
+            .count() as i64;
+
+        let report = crate::db::replace_document_file(
+            &conn,
+            &case_id,
+            &document_id,
+            &original_name,
+            &path,
+            &sha256,
+            &extraction,
+        )
+        .map_err(|error| error.to_string())?;
+
+        let (status, issue_code, severity, message, technical, action, can_retry, can_continue) =
+            issue_for_extraction(&extraction, report.sources_created);
+        let final_item = crate::db::update_import_item(
+            &conn,
+            &item.id,
+            status,
+            issue_code,
+            severity,
+            &message,
+            technical.as_deref(),
+            action,
+            can_retry,
+            can_continue,
+            extraction.mime_type.as_deref(),
+            Some(&sha256),
+            extraction.page_count,
+            pages_with_text,
+            pages_requires_ocr,
+            report.sources_created,
+        )
+        .map_err(|error| error.to_string())?;
+        crate::db::record_extraction_result(
+            &conn,
+            &case_id,
+            Some(&item.id),
+            Some(&report.document.id),
+            &extraction,
+            report.chunks_created,
+            report.sources_created,
+        )
+        .map_err(|error| error.to_string())?;
+        crate::db::ensure_ocr_and_review_items_for_import(
+            &conn,
+            &final_item,
+            Some(&report.document.id),
+        )
+        .map_err(|error| error.to_string())?;
+        let _ = crate::db::recalculate_import_session(&conn, &session.id, true);
+        emit_document_processing_progress(
+            &app,
+            &case_id,
+            &path,
+            &original_name,
+            if status == "ready" { "completed" } else { "failed" },
+            100,
+            Some(report.pages_created),
+            Some(extraction.page_count),
+            Some(report.sources_created),
+            &message,
+        );
+        Ok(report)
     })
     .await
     .map_err(|error| error.to_string())?

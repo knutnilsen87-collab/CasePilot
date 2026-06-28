@@ -9,7 +9,7 @@ Dette skal ikke bygges som ny app fra scratch. Det skal implementeres i eksister
 Repo:
 
 ```text
-https://github.com/knutnilsen87-collab/CasePilot
+https://github.com/knutnilsen87-collab/EVIDA
 ```
 
 Aktiv app:

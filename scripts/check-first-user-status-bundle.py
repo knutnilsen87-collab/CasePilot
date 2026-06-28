@@ -8,6 +8,7 @@ REQUIRED_TOP = [
     "bundle_version",
     "release_candidate_id",
     "commit_sha",
+    "quality_policy",
     "current_state",
     "scope_lock",
     "invariant_layer",
@@ -34,9 +35,41 @@ def main() -> None:
             fail(f"Missing required key: {key}")
 
     current = data["current_state"]
+    policy = data["quality_policy"]
     verification = data["verification_layer"]
     invariants = data["invariant_layer"]
     closure = data["closure_layer"]
+
+    if policy.get("quality_bar") != "production_ready_only":
+        fail("quality_policy.quality_bar must be production_ready_only")
+    if policy.get("minimum_viable_mode") is not False:
+        fail("quality_policy.minimum_viable_mode must be false")
+    if policy.get("partial_allowed_for_client_data") is not False:
+        fail("quality_policy.partial_allowed_for_client_data must be false")
+    if policy.get("fallback_policy") != "block_or_disable_not_workaround":
+        fail("quality_policy.fallback_policy must be block_or_disable_not_workaround")
+
+    closure_rule = policy.get("closure_rule", {})
+    for key in [
+        "pass_requires_all_p0",
+        "partial_counts_as_blocked",
+        "skipped_counts_as_blocked",
+        "unknown_counts_as_blocked",
+        "manual_approval_required",
+        "status_bundle_update_required",
+    ]:
+        if closure_rule.get(key) is not True:
+            fail(f"quality_policy.closure_rule.{key} must be true")
+
+    if current.get("real_client_data_allowed") is True or current.get("production_ready") is True:
+        if current.get("status") != "pass":
+            fail("client-data or production readiness requires current_state.status=pass")
+        if verification.get("p0_status") != "pass":
+            fail("client-data or production readiness requires p0_status=pass")
+        blocked_values = {"partial", "skipped", "unknown", "blocked", "deferred"}
+        for key, value in verification.items():
+            if isinstance(value, str) and value.lower() in blocked_values:
+                fail(f"client-data or production readiness cannot pass with {key}={value}")
 
     if current.get("first_user_allowed") is True:
         if current.get("status") != "pass":

@@ -92,6 +92,7 @@ pub fn run() {
             commands::export_evidence_quality_package,
             commands::remove_import_item_from_case,
             commands::register_document_in_session,
+            commands::replace_document_file,
             commands::register_document,
             commands::choose_document_paths,
             commands::choose_document_folder_paths,

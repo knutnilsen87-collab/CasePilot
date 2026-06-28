@@ -2,7 +2,7 @@
 import type { DragEvent, KeyboardEvent, MouseEvent } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { Download, FolderOpen, Moon, RotateCcw, Sun, Trash2 } from "lucide-react";
+import { Download, FolderOpen, RotateCcw, Trash2 } from "lucide-react";
 import {
   chooseDocumentFolderPaths,
   chooseDocumentPaths,
@@ -74,6 +74,19 @@ import { DocumentPreviewDrawer } from "./components/DocumentPreviewDrawer";
 import { ImportProgressSummary, type ImportAttentionItem } from "./components/ImportProgressSummary";
 import { ImportStatusCard } from "./components/documents/ImportStatusCard";
 import { PrivacyPreAlphaNotice } from "./components/privacy/PrivacyPreAlphaNotice";
+import { DesignSystemKit } from "./design-system/kit";
+import {
+  Card,
+  EmptyState,
+  ListRow,
+  Metric,
+  MetricRow,
+  PrimaryButton,
+  QuietLink,
+  ScreenScaffold,
+  SecondaryButton,
+  StatusBadge
+} from "./design-system";
 import { ReadinessStatusCard } from "./components/readiness/ReadinessStatusCard";
 import { CaseRoomGate } from "./components/case-room/CaseRoomGate";
 import { StatusCard } from "./components/StatusCard";
@@ -157,11 +170,9 @@ const viewTitles: Record<ViewKey, string> = {
   export: "Eksport"
 };
 
-const THEME_STORAGE_KEY = "evida-theme";
 const VISUAL_MODE_STORAGE_KEY = "evida-visual-mode";
 const AI_TRUST_STORAGE_KEY = "evida-ai-trust-seen";
 
-type ThemeMode = "light" | "dark";
 type VisualMode = "calm" | "standard" | "focusPlus";
 type OnboardingStage = "intro" | "start" | "import" | "caseRoom";
 type ImportQueueStatus =
@@ -514,12 +525,7 @@ export default function App() {
     return shouldOpenWorkspaceImmediately() ? "caseRoom" : "intro";
   });
   const [casePickerOpen, setCasePickerOpen] = useState(false);
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") {
-      return "light";
-    }
-    return window.localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
-  });
+  const theme = "dark" as const;
   const [visualMode, setVisualMode] = useState<VisualMode>(() => {
     if (typeof window === "undefined") {
       return "standard";
@@ -714,10 +720,6 @@ export default function App() {
   useEffect(() => {
     refresh().catch((error) => setStatus(`Feil: ${String(error)}`));
   }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
 
   useEffect(() => {
     window.localStorage.setItem(VISUAL_MODE_STORAGE_KEY, visualMode);
@@ -3238,15 +3240,6 @@ const importDocuments = useCallback(
           </div>
           <div className="guided-header-actions">
             <span className="local-pill">Lokal behandling</span>
-            <button
-              className="theme-toggle"
-              onClick={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
-              aria-label={theme === "dark" ? "Bytt til lys modus" : "Bytt til mørk modus"}
-              title={theme === "dark" ? "Lys modus" : "Mørk modus"}
-            >
-              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-              <span>{theme === "dark" ? "Lys" : "Mørk"}</span>
-            </button>
           </div>
         </header>
 
@@ -3392,165 +3385,187 @@ const importDocuments = useCallback(
         : "Finner dokumenter og klargjør import."
       : undefined;
 
+    // When a result card is visible the CTA inside it is the primary action
+    const showResultCard = Boolean(importError) || hasImportResult;
+
+    function importItemBadge(status: string): { state: "ready" | "review" | "muted"; label: string } | undefined {
+      if (status === "completed") return { state: "ready", label: "Ferdig" };
+      if (status === "manual_review_required") return { state: "review", label: "Kontroll" };
+      if (status === "failed") return { state: "review", label: "Teknisk feil under import" };
+      const label = importStatusLabel(status as ImportQueueStatus);
+      if (label) return { state: "muted", label };
+      return undefined;
+    }
+
     return (
       <section
-        className={`document-import-screen import-panel ${isDragActive ? "import-panel--active" : ""}`}
+        className={`document-import-screen${isDragActive ? " import-panel--active" : ""}`}
         onDrop={handleDrop}
         onDragEnter={() => setIsDragActive(true)}
         onDragLeave={() => setIsDragActive(false)}
         onDragOver={handleDragOver}
       >
-        {documents.length > 0 ? (
-          <div className="document-import-status-strip" role="status" aria-label="Saks- og importstatus">
-            <span>{countLabel(documents.length, "dokument", "dokumenter")}</span>
-            <span>{totalPages > 0 ? `${totalPages} sider` : "Sider beregnes"}</span>
-            <span>{readyForSourcesCount} kan brukes som kilder</span>
-            {pendingOcrPages > 0 ? <span className="muted">{pendingOcrPages} sider hentes automatisk</span> : null}
-          </div>
-        ) : null}
+        <ScreenScaffold label="Dokumenter" title="Dokumentimport">
+          {documents.length > 0 ? (
+            <div className="document-import-status-strip" role="status" aria-label="Saks- og importstatus">
+              <MetricRow>
+                <Metric label="Dokumenter" value={documents.length} />
+                <Metric label="Sider" value={totalPages > 0 ? totalPages : null} />
+                <Metric label="Klar for saksrom" value={readyForSourcesCount > 0 ? readyForSourcesCount : null} />
+                {pendingOcrPages > 0 ? <span className="ds-ocr-note">{pendingOcrPages} sider hentes automatisk</span> : null}
+              </MetricRow>
+            </div>
+          ) : null}
 
-        <div className="document-import-workspace">
-          <div>
-            <h2>Dokumentimport</h2>
-            <p>Velg filer eller en hel saksmappe. Evida behandler dokumentene lokalt og lager sporbare kildeutdrag.</p>
-          </div>
-        {!hasDocuments && !privacyNoticeDismissed ? (
-          <PrivacyPreAlphaNotice onDismiss={() => setPrivacyNoticeDismissed(true)} />
-        ) : null}
-        <div className="document-import-actions">
-          <button className="button-primary" disabled={isImporting} onClick={handleChooseFiles}>
-            Velg filer
-          </button>
-          <button className="button-secondary" disabled={isImporting || !hasDesktopRuntime()} onClick={() => void handleChooseFolder()}>
-            Velg mappe
-          </button>
-          <input
-            ref={fileInputRef}
-            className="hidden-file-input"
-            type="file"
-            multiple
-            accept=".pdf,.docx,.txt,.md,.markdown,.png,.jpg,.jpeg,.tif,.tiff"
-            onChange={(event) => handleBrowserFileSelection(event.target.files)}
-          />
-          <button className="button-ghost secondary-link" onClick={() => setShowAdvancedImport((current) => !current)}>
-            {showAdvancedImport ? "Skjul avansert" : "Avansert import"}
-          </button>
-        </div>
-        <p className="import-helper">
-          Støttede filtyper: PDF, DOCX, TXT, MD, PNG, JPG og TIFF.
-          {!hasDesktopRuntime() ? " Lokal filimport krever desktop-appen." : ""}
-        </p>
-        {showAdvancedImport ? (
-          <div className="advanced-import document-import-advanced">
+          {!hasDocuments && !privacyNoticeDismissed ? (
+            <PrivacyPreAlphaNotice onDismiss={() => setPrivacyNoticeDismissed(true)} />
+          ) : null}
+
+          <p>Velg filer eller en hel saksmappe. Evida behandler dokumentene lokalt og lager sporbare kildeutdrag.</p>
+
+          <div className="document-import-actions">
+            {showResultCard ? (
+              <SecondaryButton disabled={isImporting} onClick={handleChooseFiles}>Velg filer</SecondaryButton>
+            ) : (
+              <PrimaryButton disabled={isImporting} onClick={handleChooseFiles}>Velg filer</PrimaryButton>
+            )}
+            <SecondaryButton disabled={isImporting || !hasDesktopRuntime()} onClick={() => void handleChooseFolder()}>
+              Velg mappe
+            </SecondaryButton>
             <input
-              value={documentPath}
-              onChange={(event) => setDocumentPath(event.target.value)}
-              placeholder="Lim inn lokal filsti"
+              ref={fileInputRef}
+              className="hidden-file-input"
+              type="file"
+              multiple
+              accept=".pdf,.docx,.txt,.md,.markdown,.png,.jpg,.jpeg,.tif,.tiff"
+              onChange={(event) => handleBrowserFileSelection(event.target.files)}
             />
-            <button
-              className="button-primary"
-              disabled={!documentPath.trim() || isImporting}
-              onClick={() => void importDocuments([documentPath])}
-            >
-              Registrer dokument
-            </button>
+            <QuietLink onClick={() => setShowAdvancedImport((current) => !current)}>
+              {showAdvancedImport ? "Skjul avansert" : "Avansert import"}
+            </QuietLink>
           </div>
-        ) : null}
-        <div
-          className={`drop-zone document-import-dropzone ${isImporting ? "drop-zone--disabled" : ""}`}
-          role="button"
-          tabIndex={isImporting ? -1 : 0}
-          aria-disabled={isImporting}
-          onClick={handleDropZoneClick}
-          onKeyDown={handleDropZoneKeyDown}
-        >
-          <strong>{isDragActive ? "Slipp dokumentene her" : "Dra dokumenter hit"}</strong>
-          <span>Du kan slippe flere filer samtidig. Bruk Velg mappe for å hente en hel saksmappe rekursivt.</span>
-        </div>
-        {importRunning ? (
-          <ImportStatusCard
-            title={importCardTitle}
-            processedDocuments={importProgress.processedDocuments}
-            totalDocuments={importProgress.totalDocuments}
-            processedPages={importProgress.processedPages}
-            totalPages={importProgress.totalPagesEstimate || totalPages}
-            sourceObjects={importProgress.sourcesCreated || sources.length}
-            phase={importProgress.currentPhaseLabel}
-            etaLabel={importProgress.etaLabel}
-            progressPercent={importProgress.progressPercent}
-            remainingDocuments={importProgress.remainingDocuments}
-            processingDocuments={importProgress.processingDocuments}
-            statusMessage={importStatusMessage}
-            isActive={importRunning}
-            detailsOpen={showImportQueueDetails}
-            onToggleDetails={() => setShowImportQueueDetails((current) => !current)}
-          />
-        ) : null}
-        {importError ? (
-          <div className="document-import-result document-import-result--error" role="alert">
-            <div>
-              <span className="eyebrow">Import stoppet</span>
+
+          <p className="import-helper">
+            Støttede filtyper: PDF, DOCX, TXT, MD, PNG, JPG og TIFF.
+            {!hasDesktopRuntime() ? " Lokal filimport krever desktop-appen." : ""}
+          </p>
+
+          {showAdvancedImport ? (
+            <div className="document-import-advanced">
+              <input
+                value={documentPath}
+                onChange={(event) => setDocumentPath(event.target.value)}
+                placeholder="Lim inn lokal filsti"
+              />
+              <SecondaryButton
+                disabled={!documentPath.trim() || isImporting}
+                onClick={() => void importDocuments([documentPath])}
+              >
+                Registrer dokument
+              </SecondaryButton>
+            </div>
+          ) : null}
+
+          <div
+            className={`drop-zone document-import-dropzone${isImporting ? " drop-zone--disabled" : ""}`}
+            role="button"
+            tabIndex={isImporting ? -1 : 0}
+            aria-disabled={isImporting}
+            onClick={handleDropZoneClick}
+            onKeyDown={handleDropZoneKeyDown}
+          >
+            <strong>{isDragActive ? "Slipp dokumentene her" : "Dra dokumenter hit"}</strong>
+            <span>Du kan slippe flere filer samtidig. Bruk Velg mappe for å hente en hel saksmappe rekursivt.</span>
+          </div>
+
+          {importRunning ? (
+            <ImportStatusCard
+              title={importCardTitle}
+              processedDocuments={importProgress.processedDocuments}
+              totalDocuments={importProgress.totalDocuments}
+              processedPages={importProgress.processedPages}
+              totalPages={importProgress.totalPagesEstimate || totalPages}
+              sourceObjects={importProgress.sourcesCreated || sources.length}
+              phase={importProgress.currentPhaseLabel}
+              etaLabel={importProgress.etaLabel}
+              progressPercent={importProgress.progressPercent}
+              remainingDocuments={importProgress.remainingDocuments}
+              processingDocuments={importProgress.processingDocuments}
+              statusMessage={importStatusMessage}
+              isActive={importRunning}
+              detailsOpen={showImportQueueDetails}
+              onToggleDetails={() => setShowImportQueueDetails((current) => !current)}
+            />
+          ) : null}
+
+          {importError ? (
+            <Card role="alert">
+              <StatusBadge state="review" label="Import stoppet" />
               <h3>Noe gikk galt under import</h3>
               <p>Prøv igjen med samme dokumenter, eller importer filene i mindre grupper.</p>
-            </div>
-            <div className="panel-actions">
-              <button className="button-primary" type="button" onClick={handleChooseFiles}>Prøv igjen</button>
-              <button className="button-secondary" type="button" onClick={() => setShowImportQueueDetails((current) => !current)}>
-                {showImportQueueDetails ? "Skjul tekniske detaljer" : "Vis tekniske detaljer"}
-              </button>
-            </div>
-          </div>
-        ) : hasImportResult ? (
-          <div className={`document-import-result document-import-result--${needsReview ? "warning" : "success"}`}>
-            <div>
-              <span className="eyebrow">{needsReview ? "Kontroll" : "Ferdig"}</span>
+              <div className="panel-actions">
+                <PrimaryButton onClick={handleChooseFiles}>Prøv igjen</PrimaryButton>
+                <QuietLink onClick={() => setShowImportQueueDetails((current) => !current)}>
+                  {showImportQueueDetails ? "Skjul tekniske detaljer" : "Vis tekniske detaljer"}
+                </QuietLink>
+              </div>
+            </Card>
+          ) : hasImportResult ? (
+            <Card>
+              <StatusBadge state={needsReview ? "review" : "ready"} label={needsReview ? "Kontroll" : "Ferdig"} />
               <h3>{importResultTitle}</h3>
               <p>{importResultBody}</p>
               {pendingOcrPages > 0 ? (
-                <p className="muted">{pendingOcrPages} sider hentes automatisk — du trenger ikke gjøre noe.</p>
+                <p className="ds-ocr-note">{pendingOcrPages} sider hentes automatisk — du trenger ikke gjøre noe.</p>
               ) : null}
-            </div>
-            <div className="panel-actions">
-              {needsReview ? (
-                <button className="button-primary" type="button" onClick={() => setActiveView("documentControl")}>
-                  Gå til Dokumentkontroll
-                </button>
-              ) : canOpenSaksrom ? (
-                <button className="button-primary" type="button" onClick={() => setActiveView("caseRoom")}>
-                  Åpne Saksrom
-                </button>
+              <div className="panel-actions">
+                {needsReview ? (
+                  <PrimaryButton onClick={() => setActiveView("documentControl")}>
+                    Gå til Dokumentkontroll
+                  </PrimaryButton>
+                ) : canOpenSaksrom ? (
+                  <PrimaryButton onClick={() => setActiveView("caseRoom")}>
+                    Åpne Saksrom
+                  </PrimaryButton>
+                ) : null}
+              </div>
+            </Card>
+          ) : null}
+
+          {showImportQueueDetails ? (
+            <Card compact className="document-import-details" aria-label="Importdetaljer">
+              {importQueue.length > 0 ? (
+                importQueue.map((item) => (
+                  <ListRow
+                    key={item.path}
+                    name={item.name}
+                    badge={importItemBadge(item.status)}
+                    metric={
+                      typeof item.pages === "number"
+                        ? countLabel(item.pages, "side", "sider")
+                        : typeof item.sources === "number"
+                          ? countLabel(item.sources, "kildeutdrag", "kildeutdrag")
+                          : undefined
+                    }
+                    details={
+                      item.detail
+                        ? <p style={{ margin: "8px 0", fontSize: 13 }}>{item.detail}</p>
+                        : undefined
+                    }
+                  />
+                ))
+              ) : (
+                <p>{userCoverageExplanation}</p>
+              )}
+              {importError ? (
+                <details className="technical-disclosure">
+                  <summary className="ds-quiet-link">Vis tekniske detaljer</summary>
+                  <p>{importError}</p>
+                </details>
               ) : null}
-            </div>
-          </div>
-        ) : null}
-        {showImportQueueDetails ? (
-          <div className="document-import-details" aria-label="Importdetaljer">
-            {importQueue.length > 0 ? (
-              importQueue.map((item) => (
-                <article key={item.path} className="document-import-detail-row">
-                  <div>
-                    <strong>{item.name}</strong>
-                    <span>{item.detail || importStatusLabel(item.status)}</span>
-                  </div>
-                  <div className="document-import-detail-row__meta">
-                    {typeof item.pages === "number" ? <span>{countLabel(item.pages, "side", "sider")}</span> : null}
-                    {typeof item.sources === "number" ? <span>{countLabel(item.sources, "kildeutdrag", "kildeutdrag")}</span> : null}
-                    <span>{importStatusLabel(item.status)}</span>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <p>{userCoverageExplanation}</p>
-            )}
-            {importError ? (
-              <details className="technical-disclosure">
-                <summary>Vis tekniske detaljer</summary>
-                <p>{importError}</p>
-              </details>
-            ) : null}
-          </div>
-        ) : null}
-        </div>
+            </Card>
+          ) : null}
+        </ScreenScaffold>
       </section>
     );
   }
@@ -3735,47 +3750,42 @@ const importDocuments = useCallback(
           </div>
         ) : null}
         {documents.length === 0 ? (
-          <div className="empty-state">Ingen dokumenter registrert i valgt sak.</div>
+          <EmptyState message="Ingen dokumenter registrert i valgt sak." />
         ) : filteredDocuments.length === 0 ? (
-          <div className="empty-state">Ingen dokumenter matcher filteret.</div>
+          <EmptyState message="Ingen dokumenter matcher filteret." />
         ) : (
-          <div className="document-list">
-            {filteredDocuments.map((document) => (
-              <article key={document.id} className="document-row">
-                <div>
-                  <div className="document-primary">
-                    <strong>{document.original_name}</strong>
-                    {rowsById.get(document.id)?.label ? (
-                      <span className={rowsById.get(document.id)?.canUseInAnswer ? "status-chip status-chip--ok" : "status-chip status-chip--warn"}>
-                        {rowsById.get(document.id)?.label}
-                      </span>
-                    ) : null}
-                  </div>
-                  <button
-                    className="button-ghost technical-toggle"
-                    onClick={() => setExpandedDocumentId((current) => (current === document.id ? "" : document.id))}
-                  >
-                    {expandedDocumentId === document.id ? "Skjul tekniske detaljer" : "Vis tekniske detaljer"}
-                  </button>
-                  {expandedDocumentId === document.id ? (
-                    <div className="technical-details">
-                      <span>{document.id}</span>
-                      <span>{document.mime_type || "ukjent type"}</span>
-                      <code>{document.sha256}</code>
+          <Card compact className="document-list">
+            {filteredDocuments.map((document) => {
+              const row = rowsById.get(document.id);
+              const readiness = documentReadiness(document);
+              let docBadge: { state: "ready" | "review" | "muted"; label: string } | undefined;
+              if (row?.canUseInAnswer) {
+                docBadge = { state: "ready", label: row.label };
+              } else if (row?.label && !row.canUseInAnswer) {
+                docBadge = { state: "review", label: row.label };
+              } else if (readiness.status === "failed") {
+                docBadge = { state: "review", label: readiness.label };
+              }
+              return (
+                <ListRow
+                  key={document.id}
+                  name={document.original_name}
+                  badge={docBadge}
+                  metric={document.source_coverage_percent > 0 ? `${Math.round(document.source_coverage_percent)} %` : undefined}
+                  details={
+                    <div style={{ fontSize: 13, padding: "8px 0", display: "flex", flexDirection: "column", gap: 4 }}>
+                      <span>{countLabel(document.page_count, "side", "sider")} · {document.analyzed_page_count || 0} analysert</span>
+                      {(document.pending_ocr_page_count ?? 0) > 0 ? (
+                        <span>{document.pending_ocr_page_count} sider venter på tekst</span>
+                      ) : null}
+                      <span>{countLabel(document.source_count, "kilde", "kilder")}</span>
+                      <code style={{ fontSize: 11, wordBreak: "break-all" }}>{document.sha256}</code>
                     </div>
-                  ) : null}
-                </div>
-                <div className="case-row__meta">
-                  <span>{countLabel(document.page_count, "side", "sider")}</span>
-                  <span>{document.analyzed_page_count || 0} analysert</span>
-                  <span>{document.pending_ocr_page_count || 0} sider venter på tekst</span>
-                  <span>{countLabel(document.source_count, "kilde", "kilder")}</span>
-                  <span>{documentReadiness(document).label}</span>
-                  <span>{Math.round(document.source_coverage_percent)} % av sidene kan brukes som kilde</span>
-                </div>
-              </article>
-            ))}
-          </div>
+                  }
+                />
+              );
+            })}
+          </Card>
         )}
         {hasDocuments && !hasSources ? (
           <div className="warning-notice">
@@ -4765,7 +4775,6 @@ const importDocuments = useCallback(
             onImportFolder={() => void handleChooseFolder()}
             onExport={() => setActiveView("export")}
             onCloseCase={handleCloseCase}
-            onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
             onOpenCommandPalette={() => setCommandPaletteOpen(true)}
             onOpenSettings={() => setSettingsOpen(true)}
             onOpenDataFolder={() => void openLocalDataFolder()}
@@ -4779,9 +4788,7 @@ const importDocuments = useCallback(
             hasSources={hasSources}
             pendingOcrPages={pendingOcrPages}
             deviations={deviations}
-            theme={theme}
             visualMode={visualMode}
-            onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
             onOpenCommandPalette={() => setCommandPaletteOpen(true)}
             onSetVisualMode={setVisualMode}
             onOpenCaseSwitcher={() => setCasePickerOpen(true)}
@@ -4794,7 +4801,7 @@ const importDocuments = useCallback(
         {caseCreationError ? <div className="error-notice" role="alert">{caseCreationError}</div> : null}
 
 
-        {renderView()}
+        {window.location.hash === "#kit" ? <DesignSystemKit /> : renderView()}
       </main>
       {showNavigation && activeView === "control" && showControlTechnicalDetails ? (
         <SourcePanel

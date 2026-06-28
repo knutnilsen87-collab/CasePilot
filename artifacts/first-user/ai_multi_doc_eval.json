@@ -1,0 +1,14 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "name":  "ai_multi_doc_eval",
+    "blocker":  "Multi-document grounded-answer evaluation has not passed with current release evidence.",
+    "required_evidence":  [
+                              "multi-document case",
+                              "conflicting facts",
+                              "missing source refusal",
+                              "citation/source coverage snapshot"
+                          ],
+    "real_client_data_allowed":  false
+}

@@ -1,0 +1,263 @@
+/* Evida Design System — component styles. All values from tokens.css. */
+
+/* ── ScreenScaffold ────────────────────────────────────────── */
+.ds-screen {
+  padding: var(--sp-6) var(--sp-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  max-width: 860px;
+}
+
+.ds-screen__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.ds-screen__label {
+  font-size: var(--t-label);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--sp-1);
+}
+
+.ds-screen__title {
+  font-size: var(--t-screen);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.2;
+}
+
+/* ── Card ──────────────────────────────────────────────────── */
+.ds-card {
+  background: var(--bg-surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-6);
+}
+
+.ds-card--compact {
+  padding: var(--sp-4);
+}
+
+/* ── StatusBadge ───────────────────────────────────────────── */
+.ds-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--t-small);
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+.ds-badge--ready {
+  color: var(--status-ready);
+  background: var(--status-ready-bg);
+}
+
+.ds-badge--review {
+  color: var(--status-review);
+  background: var(--status-review-bg);
+}
+
+.ds-badge--muted {
+  color: var(--status-muted);
+  background: var(--status-muted-bg);
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.ds-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--t-body);
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: var(--r-sm);
+  border: 0.5px solid transparent;
+  cursor: pointer;
+  transition: opacity 0.1s;
+  white-space: nowrap;
+}
+
+.ds-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ds-btn--primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
+}
+
+.ds-btn--primary:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.ds-btn--secondary {
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  border-color: var(--border);
+}
+
+.ds-btn--secondary:hover:not(:disabled) {
+  background: var(--bg-surface);
+}
+
+.ds-quiet-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: var(--t-small);
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ds-quiet-link:hover {
+  color: var(--text-secondary);
+}
+
+/* ── ListRow ───────────────────────────────────────────────── */
+.ds-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 0.5px solid var(--border);
+  min-height: 52px;
+}
+
+.ds-list-row:last-child {
+  border-bottom: none;
+}
+
+.ds-list-row__name {
+  flex: 1;
+  font-size: var(--t-body);
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ds-list-row__metric {
+  font-size: var(--t-small);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ds-list-row__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-shrink: 0;
+}
+
+/* ── Metric ────────────────────────────────────────────────── */
+.ds-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ds-metric__label {
+  font-size: var(--t-small);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.ds-metric__value {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.ds-metric-row {
+  display: flex;
+  gap: var(--sp-8);
+  flex-wrap: wrap;
+}
+
+/* ── EmptyState ────────────────────────────────────────────── */
+.ds-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--sp-8) var(--sp-6);
+  gap: var(--sp-4);
+  color: var(--text-muted);
+}
+
+.ds-empty__icon {
+  opacity: 0.4;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.ds-empty__message {
+  font-size: var(--t-body);
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ── OCR muted note (layout rule 7) ───────────────────────── */
+.ds-ocr-note {
+  font-size: var(--t-small);
+  color: var(--status-muted);
+}
+
+/* ── Build stamp ───────────────────────────────────────────── */
+.sidebar-build-stamp {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-3) var(--sp-4);
+  font-size: 11px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  user-select: all;
+  margin-top: auto;
+}
+
+/* ── Kit page ──────────────────────────────────────────────── */
+.ds-kit {
+  padding: var(--sp-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-8);
+  max-width: 720px;
+  color: var(--text-primary);
+  background: var(--bg-app);
+  min-height: 100vh;
+}
+
+.ds-kit__section-title {
+  font-size: var(--t-label);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: var(--sp-3);
+}
+
+.ds-kit__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+}

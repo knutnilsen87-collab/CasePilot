@@ -1,0 +1,10 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "field_encryption_source_present":  true,
+    "sqlcipher_requirement_source_present":  true,
+    "os_keychain_or_managed_secret_verified":  false,
+    "database_file_encryption_verified":  false,
+    "blocker":  "Field-encryption code exists, but full client-data storage encryption and key-management proof is not complete."
+}

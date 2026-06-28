@@ -1,0 +1,43 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9410535Z",
+    "status":  "blocked",
+    "verdict":  "blocked",
+    "release_manifest":  {
+                             "path":  "F:\\prosjekter(MAIN)\\EVIDA\\Evida Release\\release-manifest.json",
+                             "checks":  {
+                                            "exists":  true,
+                                            "product_is_evida":  true,
+                                            "real_client_data_allowed_false":  true,
+                                            "has_sha256sums":  false,
+                                            "raw_app_field_present":  false
+                                        }
+                         },
+    "release_location":  {
+                             "release_dir":  "F:\\prosjekter(MAIN)\\EVIDA\\Evida Release",
+                             "exists":  true,
+                             "root":  "F:\\",
+                             "is_local_drive_shape":  true
+                         },
+    "defender":  {
+                     "collected":  true,
+                     "status":  "collected",
+                     "am_service_enabled":  true,
+                     "real_time_protection_enabled":  true
+                 },
+    "applocker":  {
+                      "collected":  true,
+                      "status":  "collected",
+                      "rule_collections":  [
+
+                                           ]
+                  },
+    "wdac":  {
+                 "collected":  false,
+                 "status":  "manual_required",
+                 "note":  "WDAC/Intune/Braathe policy validation must be captured on the managed target workstation."
+             },
+    "blockers":  [
+                     "Release manifest is missing required client-data fields or checksum metadata.",
+                     "Release binaries are not all Authenticode Valid."
+                 ]
+}

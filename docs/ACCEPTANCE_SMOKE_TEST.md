@@ -23,6 +23,61 @@ import -> Saksrom -> source -> workroom
 - Header says `PRE-ALPHA · testdata only` and `Sikker lokalmodus`.
 - No broken Norwegian text is visible.
 
+## Runtime Smoke Evidence Status
+
+Current status: `manual_required`
+
+Codex/static checks do not count as a passed runtime smoke. A human evaluator must run the desktop app and attach screenshots or notes before this gate can move from `manual_required` to `pass`.
+
+Evidence files:
+
+- Template: `docs/first-user/manual-smoke-evidence-template.md`
+- Current result file: `docs/first-user/manual-smoke-evidence-result.md`
+
+The current result file is intentionally `smoke_result: blocked` until a human evaluator fills it in.
+
+### Required screenshot targets
+
+- `01_intro_launch.png` - Evida opens from `Start Evida.bat` or `Evida Release\Evida.exe`; intro/vignette is visible.
+- `02_case_created.png` - a synthetic/redacted test case is created or opened.
+- `03_document_import_idle.png` - Dokumenter screen shows local/test-data status and import actions.
+- `04_import_progress.png` - import progress shows current file, progress, ETA/status if available.
+- `05_document_control_replace_disabled.png` - Dokumentkontroll shows `Erstatt fil` disabled with visible reason.
+- `06_source_preview.png` - source preview/search/drawer opens from a controlled source.
+- `07_saksrom_source_answer.png` - Saksrom answer is source-bound or clearly says source basis is missing.
+- `08_settings_security.png` - settings/security tab shows local/test-data/privacy limits.
+- `09_dark_mode_or_theme.png` - dark/light toggle or theme state is verified if available.
+- `10_keyboard_focus.png` - visible keyboard focus is shown on a primary control.
+
+### Manual pass/fail checklist
+
+Use only synthetic, redacted, or approved test data.
+
+| Step | Expected result | Pass/Fail | Evidence |
+|---|---|---|---|
+| Launch app | App opens without terminal-only failure | [ ] PASS / [ ] FAIL | screenshot/log |
+| Intro | Intro/vignette is understandable and not a login gate | [ ] PASS / [ ] FAIL | screenshot |
+| Create/open case | Active test case is visible | [ ] PASS / [ ] FAIL | screenshot |
+| Import documents | PDF/DOCX/TXT or approved test docs can be selected/imported | [ ] PASS / [ ] FAIL | screenshot |
+| Import progress | Progress/status is understandable and not duplicated/noisy | [ ] PASS / [ ] FAIL | screenshot |
+| Needs review | Documents needing OCR/manual control are clearly marked | [ ] PASS / [ ] FAIL | screenshot |
+| Erstatt fil | Button remains disabled and visible reason is present | [ ] PASS / [ ] FAIL | screenshot |
+| Source preview/search | Controlled source can be opened and traced to document/page | [ ] PASS / [ ] FAIL | screenshot |
+| Saksrom | Answer is source-bound or gives safe missing-source response | [ ] PASS / [ ] FAIL | screenshot |
+| Settings/security | UI clearly says test-data/local/privacy limits; real client data is not allowed | [ ] PASS / [ ] FAIL | screenshot |
+| Keyboard basics | Tab focus is visible for import/control/settings primary controls | [ ] PASS / [ ] FAIL | screenshot/notes |
+| Dark/light | Theme remains readable in checked mode(s) | [ ] PASS / [ ] FAIL | screenshot |
+
+### Stop conditions
+
+- Any real client data is present or requested.
+- `Erstatt fil` appears enabled.
+- The app sends raw document content to external AI without explicit test policy.
+- Import/source status looks green for unsupported, failed, unsafe OCR, or manual-review documents.
+- The evaluator cannot tell what the next action is after import.
+- Text is visibly broken or unreadable.
+- Keyboard users cannot reach import, document control, settings, or drawer close controls.
+
 ## Workflow Smoke Test
 
 - Create a test case.

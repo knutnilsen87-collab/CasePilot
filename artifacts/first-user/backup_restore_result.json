@@ -1,0 +1,10 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9270554Z",
+    "status":  "partial",
+    "verdict":  "blocked",
+    "automated_tests_referenced":  [
+                                       "cargo db backup/restore tests when available through desktop validation"
+                                   ],
+    "client_data_marker_restore_verified":  false,
+    "blocker":  "Backup/restore needs a documented synthetic client-data marker run before real client data."
+}

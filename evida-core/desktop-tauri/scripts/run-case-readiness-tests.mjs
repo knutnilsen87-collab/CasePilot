@@ -47,7 +47,7 @@ const cases = [
   ["50% coverage -> requires_control", { pagesWithSources: 50, sourceCount: 1 }, "requires_control"],
   ["79% coverage -> requires_control", { pagesWithSources: 79, sourceCount: 1 }, "requires_control"],
   ["active processing with 90% coverage -> requires_control", { pagesWithSources: 90, sourceCount: 1, hasActiveProcessing: true }, "requires_control"],
-  ["pending text recognition pages -> requires_control", { pagesWithSources: 90, sourceCount: 1, pendingTextRecognitionPages: 1 }, "requires_control"],
+  ["pending text recognition pages with enough sources -> ready_for_preliminary_analysis", { pagesWithSources: 90, sourceCount: 1, pendingTextRecognitionPages: 1 }, "ready_for_preliminary_analysis"],
   ["failed document -> requires_control", { pagesWithSources: 90, sourceCount: 1, failedDocuments: 1, totalDocuments: 2 }, "requires_control"],
   ["80% coverage with no blockers -> ready_for_preliminary_analysis", { pagesWithSources: 80, sourceCount: 1 }, "ready_for_preliminary_analysis"],
   ["94% coverage -> ready_for_preliminary_analysis", { pagesWithSources: 94, sourceCount: 1 }, "ready_for_preliminary_analysis"],

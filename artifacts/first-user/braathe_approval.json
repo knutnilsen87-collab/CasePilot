@@ -1,0 +1,8 @@
+{
+    "generated_at":  "2026-05-19T12:29:11.9410535Z",
+    "status":  "missing",
+    "approved":  false,
+    "authority":  "Braathe/Jussys IT",
+    "required_before_real_client_data":  true,
+    "blocker":  "No signed managed-workstation approval artifact is present."
+}

@@ -37,3 +37,9 @@ legacy/abandoned-initial-app/
 # OS/editor
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Build/runtime logs and generated dumps
+tauri-build.log
+**/vite-smoke.*.log
+status_bundle.txt

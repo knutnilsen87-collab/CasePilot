@@ -6,6 +6,25 @@
   "commit_sha": "REPLACE_ME",
   "created_at": "REPLACE_ME",
   "updated_at": "REPLACE_ME",
+  "quality_policy": {
+    "quality_bar": "production_ready_only",
+    "minimum_viable_mode": false,
+    "partial_allowed_for_client_data": false,
+    "fallback_policy": "block_or_disable_not_workaround",
+    "current_state": {
+      "first_user_allowed": false,
+      "real_client_data_allowed": false,
+      "production_ready": false
+    },
+    "closure_rule": {
+      "pass_requires_all_p0": true,
+      "partial_counts_as_blocked": true,
+      "skipped_counts_as_blocked": true,
+      "unknown_counts_as_blocked": true,
+      "manual_approval_required": true,
+      "status_bundle_update_required": true
+    }
+  },
   "current_state": {
     "lifecycle_state": "reviewing",
     "status": "blocked",

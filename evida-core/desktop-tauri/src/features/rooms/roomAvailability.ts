@@ -61,7 +61,7 @@ export function getRoomAvailability(
     return {
       enabled: false,
       mode: "locked",
-      label: "Krever dokumentkontroll",
+      label: "Kontroll kreves",
       reason: "Importen er ikke ferdig."
     };
   }
@@ -70,7 +70,7 @@ export function getRoomAvailability(
     return {
       enabled: false,
       mode: "locked",
-      label: "Krever dokumentkontroll",
+      label: "Kontroll kreves",
       reason: "Dokumentkontroll må fullføres først."
     };
   }
@@ -139,6 +139,9 @@ export function getRoomAvailability(
 }
 
 export function getSidebarStateLabel(availability: RoomAvailability) {
+  if (availability.mode === "preliminary") {
+    return "Foreløpig";
+  }
   if (availability.mode !== "locked") {
     return availability.label;
   }

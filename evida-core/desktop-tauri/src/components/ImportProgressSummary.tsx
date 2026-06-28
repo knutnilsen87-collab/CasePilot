@@ -86,7 +86,8 @@ export function ImportProgressSummary({
   const etaLabel = formatEtaLabel(etaSeconds);
   const etaPrimary = etaSeconds === null ? "Beregner tid igjen" : etaLabel.replace(/^ETA:\s*/, "");
   const remainingLabel = `${remainingDocuments} ${remainingDocuments === 1 ? "dokument gjenstår" : "dokumenter gjenstår"}`;
-  const activeLabel = `${processingDocuments} ${processingDocuments === 1 ? "behandles nå" : "behandles nå"}`;
+  const activeLabel = processingDocuments > 0 ? `${processingDocuments} behandles nå` : "Klargjør neste dokument";
+  const canShowControlActions = state !== "processing" && attentionCount > 0;
 
   return (
     <section className={`import-progress-summary import-progress-summary--${state}`} aria-live="polite">
@@ -137,7 +138,7 @@ export function ImportProgressSummary({
         ) : null}
         <span>Importert</span>
         <strong>{importedDocuments ?? terminalDocuments} av {totalDocuments}</strong>
-        <span>Behandles nå</span>
+        <span>Aktivt nå</span>
         <strong>{processingDocuments}</strong>
         <span>Krever kontroll</span>
         <strong>{attentionCount}</strong>
@@ -189,11 +190,11 @@ export function ImportProgressSummary({
         </div>
       ) : null}
 
-      {attentionCount > 0 ? (
+      {canShowControlActions ? (
         <div className="import-progress-summary__actions">
           {onShowAttentionItems ? (
             <button className="button-primary" type="button" aria-controls="documents-needing-control" onClick={onShowAttentionItems}>
-              Start kontroll
+              Gå gjennom dokumenter som trenger kontroll
             </button>
           ) : null}
           {onShowDetails ? (
@@ -204,7 +205,7 @@ export function ImportProgressSummary({
         </div>
       ) : null}
 
-      {detailsOpen && itemsForDetails.length > 0 ? (
+      {state !== "processing" && detailsOpen && itemsForDetails.length > 0 ? (
         <section className="import-progress-summary__attention-list" aria-label="Dokumenter som krever kontroll">
           <h3>Dokumenter som krever kontroll</h3>
           {itemsForDetails.map((item) => (
